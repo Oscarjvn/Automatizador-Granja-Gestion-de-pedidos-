@@ -1,5 +1,8 @@
-<h1>App de pedidos</h1>
-<h1>Lista de Pedidos en Tránsito</h1>
+{% extends "base.html" %}
+{% block content %}
+<div id="caja" class="d-flex justify-content-center">
+<div id="pedidos" class="m5-auto">
+    <h1>Lista de Pedidos en Tránsito</h1>
 
 {% if pedidos %}
     <table>
@@ -23,3 +26,21 @@
 {% else %}
     <p>No hay pedidos pendientes en este momento.</p>
 {% endif %}
+
+</div>
+
+<div id="invetory-dashboard" class="m-auto">
+<p>Estado del inventario</p>
+<li>
+    <ol>1</ol>
+    <ol>2</ol>
+    <ol>3</ol>
+    <ol>4</ol>
+    <ol>5</ol>
+    <ol>6</ol>
+    <ol>7</ol>
+
+</li>
+</div>
+</div>
+{% endblock content %}
