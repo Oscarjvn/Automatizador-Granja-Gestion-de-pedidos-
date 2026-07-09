@@ -19,6 +19,7 @@ class Producto(models.Model):
     nombre = models.CharField(max_length=150)
     categoria = models.CharField(max_length=50, blank=True, null=True)
     unidad_empaque = models.IntegerField(blank=True, null=True)
+    barra= models.CharField(max_length=100)
 
     class Meta:
         managed = True
