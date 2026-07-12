@@ -24,7 +24,7 @@
                                 {% for pedido in pedidos %}
                                 <tr>
                                     <td class="fw-bold text-primary">#{{ pedido.id_pedido }}</td>
-                                    <td>{{ pedido.id_tienda }}</td>
+                                    <td>{{ pedido.tienda.nombre}}</td>
                                     <td>{{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</td>
                                 </tr>
                                 {% endfor %}
@@ -49,7 +49,7 @@
                     <ul class="list-group list-group-flush">
                         {% for item in inventario %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ item.id_producto }}
+                            {{ item.producto.nombre }}
                             <span class="badge bg-secondary rounded-pill">{{ item.stock_actual }}</span>
                         </li>
                         {% endfor %}

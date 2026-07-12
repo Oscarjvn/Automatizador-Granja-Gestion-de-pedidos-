@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Tienda(models.Model):
     id_tienda = models.AutoField(primary_key=True)
@@ -76,3 +77,14 @@ class DetallePedido(models.Model):
     class Meta:
         managed = True
         db_table = 'detalle_pedido'
+
+class Usuario(models.Model):
+    usuario= models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    tienda= models.ForeignKey('Tienda', on_delete=models.CASCADE, db_column='id_tienda')
+    rol = models.CharField(max_length=20)
+
+    class Meta:
+        db_table = 'usuario'
+    
+    def __str__(self):
+        return self.usuario.username
