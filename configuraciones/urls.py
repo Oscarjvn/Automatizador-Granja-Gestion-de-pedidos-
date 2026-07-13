@@ -21,6 +21,8 @@ from django.conf import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("nucleo.urls")),
+    path("acounts/", include("django.contrib.auth.urls")),
+    path("accounts/", include("accounts.urls"))
 ]
 if settings.DEBUG:
     import debug_toolbar
