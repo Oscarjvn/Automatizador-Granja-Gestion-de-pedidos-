@@ -17,12 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", include("nucleo.urls")),
-    path("acounts/", include("django.contrib.auth.urls")),
-    path("accounts/", include("accounts.urls"))
+    #path("", include("nucleo.urls"))redireccion original al ingresar,
+    path("home/", include("nucleo.urls")),
+    #path("acounts/", include("django.contrib.auth.urls")) ruta de login original,
+    path("", include("django.contrib.auth.urls")),
+    path("accounts/", include("accounts.urls")),
+    path("", RedirectView.as_view(url='/login/', permanent=False)),
 ]
 if settings.DEBUG:
     import debug_toolbar

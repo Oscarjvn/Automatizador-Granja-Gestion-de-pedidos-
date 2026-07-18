@@ -1,8 +1,93 @@
 {% block content %}
-  <h2>Sign up</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Sign up</button>
-  </form>
-{% endblock %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 85vh; padding-top: 2rem; padding-bottom: 2rem;">
+    <div class="card shadow-sm border-0" style="width: 100%; max-width: 460px; border-radius: 8px;">
+        
+        <!-- Encabezado de la Tarjeta (Consistente con Granja Mercados) -->
+        <div class="card-header text-white text-center py-4" style="background-color: #007bff; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+            <h3 class="mb-0 fw-bold">Granja Mercados</h3>
+            <small class="text-white-50">Crea una cuenta de operador para el sistema</small>
+        </div>
+
+        <div class="card-body p-4">
+            <form action="" method="post">
+                {% csrf_token %}
+                
+                <!-- Contenedor para aplicar estilos a los inputs nativos de Django -->
+                <div class="django-form-fields mb-4">
+                    {{ form.as_p }}
+                </div>
+
+                <!-- Botón de Registro -->
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mb-2" style="background-color: #007bff; border: none;">
+                    Registrar Cuenta
+                </button>
+                
+                <!-- Botón para regresar al Login -->
+                <a href="{% url 'login' %}" class="btn btn-outline-secondary w-100 py-2 fw-bold">
+                    ¿Ya tienes cuenta? Inicia Sesión
+                </a>
+            </form>
+        </div>
+
+        <div class="card-footer bg-light text-center py-3" style="border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+            <small class="text-muted">Todos los registros quedan auditados</small>
+        </div>
+    </div>
+</div>
+
+<!-- Estilos para heredar el diseño limpio de Bootstrap sobre el formulario genérico -->
+<style>
+    /* Estructura vertical para cada campo */
+    .django-form-fields p {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1.2rem;
+    }
+    
+    /* Etiquetas del formulario */
+    .django-form-fields label {
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+    
+    /* Inputs estilizados como form-control de Bootstrap */
+    .django-form-fields input {
+        display: block;
+        width: 100%;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.95rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+    
+    /* Efecto foco azul al escribir */
+    .django-form-fields input:focus {
+        color: #212529;
+        background-color: #fff;
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25s rgba(13, 110, 253, .25);
+    }
+    
+    /* Estilizado elegante de las listas de requisitos de contraseña (.helptext) */
+    .django-form-fields .helptext, 
+    .django-form-fields .helptext ul {
+        font-size: 0.78rem;
+        color: #6c757d;
+        margin-top: 0.3rem;
+        padding-left: 1rem;
+        list-style-type: disc;
+    }
+    
+    .django-form-fields .helptext ul li {
+        margin-bottom: 0.1rem;
+    }
+</style>
+{% endblock content %}

@@ -1,9 +1,75 @@
-
 {% block content %}
-<h2>Login</h2>
-<form action="" method="post">
-    {% csrf_token %}
-    {{form.as_p}}
-    <button type="submit">login</button>
-</form>
-{% endblock content %}    
+<!-- Este contenedor padre se encarga de centrar todo en pantalla completa -->
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    
+    <!-- Tu tarjeta de Login con un ancho máximo controlado -->
+    <div class="card shadow-sm" style="width: 100%; max-width: 400px; border-radius: 8px;">
+        
+        <div class="card-body p-4">
+            <!-- AQUÍ VA TU FORMULARIO -->
+            <form action="" method="post">
+                {% csrf_token %}
+                
+                <div class="django-form-fields mb-3">
+                    {{ form.as_p }}
+                </div>
+
+                <!-- Botón de Acción Principal -->
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mb-2" style="background-color: #007bff; border: none;">
+                    Ingresar al Sistema
+                </button>
+                
+                <!-- Botón para Redireccionar a Signup -->
+                <a href="{% url 'singup' %}" class="btn btn-outline-secondary w-100 py-2 fw-bold">
+                    Crear una Cuenta Nueva
+                </a>
+            </form>
+        </div>
+
+    </div>
+
+</div>
+<!-- Estilo CSS embebido rápido para forzar los inputs de Django a usar el estilo de Bootstrap (form-control) -->
+<style>
+    /* Buscamos los inputs que mete Django con as_p y los estilizamos elegantemente */
+    .django-form-fields p {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+    }
+    .django-form-fields label {
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+    .django-form-fields input {
+        display: block;
+        width: 100%;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        appearance: none;
+        border-radius: 0.25rem;
+        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    }
+    .django-form-fields input:focus {
+        color: #212529;
+        background-color: #fff;
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25s rgba(13, 110, 253, .25);
+    }
+    /* Oculta los molestos textos de ayuda por defecto de contraseñas de Django si se vuelven muy largos */
+    .django-form-fields .helptext {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock content %}
