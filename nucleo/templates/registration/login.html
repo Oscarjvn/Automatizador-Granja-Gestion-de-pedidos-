@@ -1,75 +1,105 @@
-{% block content %}
-<!-- Este contenedor padre se encarga de centrar todo en pantalla completa -->
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-    
-    <!-- Tu tarjeta de Login con un ancho máximo controlado -->
-    <div class="card shadow-sm" style="width: 100%; max-width: 400px; border-radius: 8px;">
-        
-        <div class="card-body p-4">
-            <!-- AQUÍ VA TU FORMULARIO -->
-            <form action="" method="post">
-                {% csrf_token %}
-                
-                <div class="django-form-fields mb-3">
-                    {{ form.as_p }}
-                </div>
+{% load static %}
 
-                <!-- Botón de Acción Principal -->
-                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mb-2" style="background-color: #007bff; border: none;">
-                    Ingresar al Sistema
-                </button>
-                
-                <!-- Botón para Redireccionar a Signup -->
-                <a href="{% url 'singup' %}" class="btn btn-outline-secondary w-100 py-2 fw-bold">
-                    Crear una Cuenta Nueva
-                </a>
-            </form>
+{% block content %}
+<div class="login-wrapper">
+    <div class="login-card">
+        
+        <!-- Logo Corporativo -->
+        <div class="text-center mb-3">
+            <img src="{% static 'img/photo.jpg' %}" alt="Logo Granja" class="login-logo">
         </div>
 
-    </div>
+        <!-- Títulos -->
+        <div class="text-center mb-4">
+            <h4 class="fw-bold mb-1 text-dark">Granja Mercados</h4>
+            <span class="text-muted small">Inicia sesión para continuar</span>
+        </div>
 
+        <!-- Formulario -->
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            <div class="mb-3 text-start">
+                <label for="id_username" class="form-label fw-bold text-secondary small mb-1">Usuario</label>
+                <input type="text" name="username" id="id_username" class="form-control custom-input" required autofocus>
+            </div>
+
+            <div class="mb-4 text-start">
+                <label for="id_password" class="form-label fw-bold text-secondary small mb-1">Contraseña</label>
+                <input type="password" name="password" id="id_password" class="form-control custom-input" required>
+            </div>
+
+            <button type="submit" class="btn btn-granja w-100 py-2 fw-bold">
+                Iniciar sesión
+            </button>
+        </form>
+
+    </div>
 </div>
-<!-- Estilo CSS embebido rápido para forzar los inputs de Django a usar el estilo de Bootstrap (form-control) -->
+
 <style>
-    /* Buscamos los inputs que mete Django con as_p y los estilizamos elegantemente */
-    .django-form-fields p {
+    /* Fondo pantalla completa */
+    .login-wrapper {
+        min-height: 100vh;
+        background-color: #f3f4f6;
         display: flex;
-        flex-direction: column;
-        margin-bottom: 1rem;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem;
     }
-    .django-form-fields label {
-        font-weight: 600;
-        margin-bottom: 0.4rem;
-        color: #495057;
-        font-size: 0.9rem;
-    }
-    .django-form-fields input {
-        display: block;
+
+    /* Tarjeta Flotante */
+    .login-card {
+        background: #ffffff;
         width: 100%;
-        padding: 0.375rem 0.75rem;
+        max-width: 420px;
+        padding: 2.5rem 2rem;
+        border-radius: 18px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+
+    /* Logo */
+    .login-logo {
+        max-height: 65px;
+        width: auto;
+        object-fit: contain;
+    }
+
+    /* Campos de Entrada */
+    .custom-input {
+        border-radius: 10px !important;
+        border: 1px solid #d1d5db !important;
+        padding: 0.65rem 0.9rem !important;
+        font-size: 0.95rem;
+        background-color: #ffffff;
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* Efecto Verde Neón al enfocar el input */
+    .custom-input:focus {
+        border-color: #82ec00 !important;
+        box-shadow: 0 0 0 3px rgba(130, 236, 0, 0.35) !important;
+        outline: none;
+    }
+
+    /* Botón Verde Granja */
+    .btn-granja {
+        background-color: #82ec00 !important;
+        color: #000000 !important;
+        border: none !important;
+        border-radius: 10px !important;
         font-size: 1rem;
-        font-weight: 400;
-        line-height: 1.5;
-        color: #212529;
-        background-color: #fff;
-        background-clip: padding-box;
-        border: 1px solid #ced4da;
-        appearance: none;
-        border-radius: 0.25rem;
-        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        transition: background-color 0.2s ease-in-out, transform 0.1s ease;
     }
-    .django-form-fields input:focus {
-        color: #212529;
-        background-color: #fff;
-        border-color: #86b7fe;
-        outline: 0;
-        box-shadow: 0 0 0 0.25s rgba(13, 110, 253, .25);
+
+    .btn-granja:hover {
+        background-color: #74d400 !important;
+        color: #000000 !important;
     }
-    /* Oculta los molestos textos de ayuda por defecto de contraseñas de Django si se vuelven muy largos */
-    .django-form-fields .helptext {
-        font-size: 0.75rem;
-        color: #6c757d;
-        margin-top: 0.25rem;
+
+    .btn-granja:active {
+        transform: scale(0.98);
     }
 </style>
 {% endblock content %}

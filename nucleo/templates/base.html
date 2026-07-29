@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <title>Granja</title>
 </head>
@@ -11,18 +11,7 @@
  <header>
       <h1 class="text-center"><a href="/">Pedidos Granja</a></h1>
     </header>
-    {% if user.is_authenticated %}
-  <p>¡Hola {{ user.username }}!</p>
-  <form action="{% url 'logout' %}" method="post" style="display: inline;">
-    {% csrf_token %}
-    <button type="submit" class="btn-logout" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
-        Cerrar Sesión
-    </button>
-</form>
-{% else %}
-  <p>No estás logueado</p>
-  <a href="{% url 'login' %}">login</a>
-{% endif %}
+
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow">
     <div class="container-fluid">
         <a class="navbar-brand fw-bold" href="#">
@@ -75,7 +64,22 @@
       {% endblock content %}
     </div>
     <footer class="d-flex justify-content-center">
-      <p class="m-auto">usuario</p>
+      <p class="m-auto">
+            {% if user.is_authenticated %}
+  <p>¡Hola {{ user.username }}!</p>
+  <form action="{% url 'logout' %}" method="post" style="display: inline;">
+    {% csrf_token %}
+    <br>
+    <button type="submit" class="btn-logout" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+        Cerrar Sesión
+    </button>
+</form>
+{% else %}
+  <p>No estás logueado</p>
+  <a href="{% url 'login' %}">login</a>
+{% endif %}
+
+      </p>
       <p class="m-auto">fecha y hora</p>
     </footer>
 </body>

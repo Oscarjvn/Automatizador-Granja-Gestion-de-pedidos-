@@ -1,0 +1,22 @@
+/* Ajuste inteligente para el logo en la barra superior (Navbar) */
+.navbar-brand .brand-image,
+.brand-link .brand-image,
+.main-header .logo img {
+    max-height: 38px !important;    /* Altura máxima para no deformar la barra */
+    width: auto !important;          /* Ancho automático manteniendo la proporción */
+    object-fit: contain !important;  /* Redimensiona respetando el aspect ratio */
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Ajuste para el logo en la pantalla de Login de Jazzmin */
+.login-logo img,
+.login-box-msg + img {
+    max-width: 80% !important;
+    max-height: 80px !important;
+    height: auto !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto 15px auto !important;
+}

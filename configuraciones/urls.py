@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     #path("", include("nucleo.urls"))redireccion original al ingresar,
     path("home/", include("nucleo.urls")),
-    #path("acounts/", include("django.contrib.auth.urls")) ruta de login original,
+    path("accounts/", include("django.contrib.auth.urls")), #ruta de login original,
     path("", include("django.contrib.auth.urls")),
     path("accounts/", include("accounts.urls")),
     path("", RedirectView.as_view(url='/login/', permanent=False)),
