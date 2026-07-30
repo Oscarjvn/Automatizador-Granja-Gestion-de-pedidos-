@@ -18,8 +18,9 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.views.generic import RedirectView
-
+from nucleo.views.admin_logout import custom_admin_logout
 urlpatterns = [
+    path('admin/logout/', custom_admin_logout, name='admin_logout'),
     path('admin/', admin.site.urls),
     #path("", include("nucleo.urls"))redireccion original al ingresar,
     path("home/", include("nucleo.urls")),

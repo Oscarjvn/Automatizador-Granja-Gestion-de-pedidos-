@@ -1,9 +1,23 @@
+{% load static %}
+
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 85vh; padding-top: 2rem; padding-bottom: 2rem;">
-    <div class="card shadow-sm border-0" style="width: 100%; max-width: 460px; border-radius: 8px;">
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Granja Mercados</title>
+
+    <!-- Cargar un CSS en particular -->
+    <link rel="stylesheet" href="{% static 'css/basicos.css' %}">
+</head>
+<body>
+<div class="login-wrapper">
+    <div class="login-card">
         
         <!-- Encabezado de la Tarjeta (Consistente con Granja Mercados) -->
-        <div class="card-header text-white text-center py-4" style="background-color: #007bff; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+        <div class="">
+            <img src="{% static 'img/photo.jpg' %}" alt="Logo Granja" class="login-logo">
             <h3 class="mb-0 fw-bold">Granja Mercados</h3>
             <small class="text-white-50">Crea una cuenta de operador para el sistema</small>
         </div>
@@ -18,12 +32,12 @@
                 </div>
 
                 <!-- Botón de Registro -->
-                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mb-2" style="background-color: #007bff; border: none;">
+                <button type="submit" class="btn-granja">
                     Registrar Cuenta
                 </button>
                 
                 <!-- Botón para regresar al Login -->
-                <a href="{% url 'login' %}" class="btn btn-outline-secondary w-100 py-2 fw-bold">
+                <a href="{% url 'login' %}" class="btn-granja">
                     ¿Ya tienes cuenta? Inicia Sesión
                 </a>
             </form>
@@ -34,7 +48,8 @@
         </div>
     </div>
 </div>
-
+</body>
+</html>
 <!-- Estilos para heredar el diseño limpio de Bootstrap sobre el formulario genérico -->
 <style>
     /* Estructura vertical para cada campo */

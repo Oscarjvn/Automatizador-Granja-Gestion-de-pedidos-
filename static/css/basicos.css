@@ -1,0 +1,64 @@
+
+   /* Fondo pantalla completa */
+    .login-wrapper {
+        min-height: 100vh;
+        background-color: #f3f4f6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem;
+    }
+
+    /* Tarjeta Flotante */
+    .login-card {
+        background: #ffffff;
+        width: 100%;
+        max-width: 420px;
+        padding: 2.5rem 2rem;
+        border-radius: 18px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+
+    /* Logo */
+    .login-logo {
+        max-height: 65px;
+        width: auto;
+        object-fit: contain;
+    }
+
+    /* Campos de Entrada */
+    .custom-input {
+        border-radius: 10px !important;
+        border: 1px solid #d1d5db !important;
+        padding: 0.65rem 0.9rem !important;
+        font-size: 0.95rem;
+        background-color: #ffffff;
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* Efecto Verde Neón al enfocar el input */
+    .custom-input:focus {
+        border-color: #82ec00 !important;
+        box-shadow: 0 0 0 3px rgba(130, 236, 0, 0.35) !important;
+        outline: none;
+    }
+
+    /* Botón Verde Granja */
+    .btn-granja {
+        background-color: #82ec00 !important;
+        color: #000000 !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-size: 1rem;
+        transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+    }
+
+    .btn-granja:hover {
+        background-color: #74d400 !important;
+        color: #000000 !important;
+    }
+
+    .btn-granja:active {
+        transform: scale(0.98);
+    }

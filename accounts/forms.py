@@ -11,6 +11,7 @@ class CustomUserCreationForm(UserCreationForm):
             'first_name': 'Nombre',
             'last_name': 'Apellido',
             'email': 'Correo Electrónico',
+           
         }
 
 class CustomUserChangeForm(UserChangeForm):
