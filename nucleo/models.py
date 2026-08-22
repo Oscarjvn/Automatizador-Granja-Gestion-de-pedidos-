@@ -33,11 +33,9 @@ class Producto(models.Model):
 class InventarioProducto(models.Model):
     id_inv_prod = models.AutoField(primary_key=True)
     tienda = models.ForeignKey(Tienda, models.CASCADE, db_column='id_tienda')
-    producto = models.ForeignKey(Producto, models.CASCADE, db_column='id_producto')
+    producto = models.ForeignKey(Producto, models.CASCADE, db_column='sku')
     stock_actual = models.IntegerField(default=0)
-    stock_min = models.IntegerField()
-    stock_max = models.IntegerField()
-    ventas_prom_dia = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+ 
 
     class Meta:
         managed = True
