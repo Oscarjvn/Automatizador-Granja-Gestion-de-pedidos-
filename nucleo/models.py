@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 
 class Tienda(models.Model):
     id_tienda = models.AutoField(primary_key=True)
@@ -49,7 +50,7 @@ class Lote(models.Model):
     producto = models.ForeignKey(Producto, models.CASCADE, db_column='id_producto')
     codigo_lote = models.CharField(max_length=50, blank=True, null=True)
     fecha_vencimiento = models.DateField()
-    cantidad = models.IntegerField(default=0)
+    
 
     class Meta:
         managed = True
@@ -58,7 +59,11 @@ class Lote(models.Model):
 class Pedido(models.Model):
     id_pedido = models.AutoField(primary_key=True)
     tienda = models.ForeignKey(Tienda, models.PROTECT, db_column='id_tienda')
-    # Nota: Aquí más adelante usaremos el modelo de usuario de Django
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT, 
+        related_name='pedidos'
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True) 
     estatus = models.CharField(max_length=20, default='PENDIENTE')
 
