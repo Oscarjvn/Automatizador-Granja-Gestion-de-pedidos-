@@ -20,14 +20,18 @@ from django.conf import settings
 from django.views.generic import RedirectView
 from nucleo.views.admin_logout import custom_admin_logout
 urlpatterns = [
+    #rutas de admin
     path('admin/logout/', custom_admin_logout, name='admin_logout'),
     path('admin/', admin.site.urls),
-    #path("", include("nucleo.urls"))redireccion original al ingresar,
-    path("home/", include("nucleo.urls")),
+
+    #rutas de autenticacion e ingreso
     path("accounts/", include("django.contrib.auth.urls")), #ruta de login original,
     path("", include("django.contrib.auth.urls")),
     path("accounts/", include("accounts.urls")),
     path("", RedirectView.as_view(url='/login/', permanent=False)),
+
+    #rutas de nucleo
+    path('', include('nucleo.urls')),
 ]
 if settings.DEBUG:
     import debug_toolbar
