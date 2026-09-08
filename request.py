@@ -1,11 +1,11 @@
 import requests
-
+import json
 url= 'http://192.168.20.27:7002/ventas'
 payload= {"sucursal": "SUC019",
     "fecha_desde": "2026-08-28",
     "fecha_hasta": "2026-08-28",
     "hora_desde": "08:00",
-    "hora_hasta": "09:00",
+    "hora_hasta": "21:00",
     }
 
 try:
@@ -32,4 +32,7 @@ else:
     # This block only runs if the request succeeded perfectly
     print("Success!")
     data = response.json()
-    print(data)
+    ventas= data["ventas"]
+    print(ventas)
+    with open('datos/ventas.json', 'w', encoding='utf-8') as archivo:
+        json.dump(data, archivo, indent=4)

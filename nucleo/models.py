@@ -91,3 +91,16 @@ class Usuario(models.Model):
     
     def __str__(self):
         return self.usuario.username
+
+
+class Ventas(models.Model):
+    id_venta= models.AutoField(primary_key=True)
+    numero_factura= models.IntegerField()
+    fecha= models.DateField()
+    hora= models.TimeField()
+    #conexion de esta tabla con tabla Productos
+    codigo_producto= models.ForeignKey(Producto, on_delete=models.PROTECT, db_column='sku', to_field='sku')
+    cantidad_vendida= models.IntegerField()
+    precio_usd= models.DecimalField(max_digits=10, decimal_places=2)
+    #conexion con Tienda
+    tienda = models.ForeignKey(Tienda, on_delete=models.PROTECT, db_column='id_tienda')
