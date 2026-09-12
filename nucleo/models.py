@@ -104,3 +104,5 @@ class Ventas(models.Model):
     precio_usd= models.DecimalField(max_digits=10, decimal_places=2)
     #conexion con Tienda
     tienda = models.ForeignKey(Tienda, on_delete=models.PROTECT, db_column='id_tienda')
+    def __str__(self):
+        return f"Factura N° {self.numero_factura} - {self.fecha} - {self.hora} - {self.codigo_producto}"
