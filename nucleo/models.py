@@ -95,7 +95,7 @@ class Usuario(models.Model):
 
 class Ventas(models.Model):
     id_venta= models.AutoField(primary_key=True)
-    numero_factura= models.IntegerField()
+    numero_factura= models.CharField(max_length=100)
     fecha= models.DateField()
     hora= models.TimeField()
     #conexion de esta tabla con tabla Productos
@@ -105,4 +105,4 @@ class Ventas(models.Model):
     #conexion con Tienda
     tienda = models.ForeignKey(Tienda, on_delete=models.PROTECT, db_column='id_tienda')
     def __str__(self):
-        return f"Factura N° {self.numero_factura} - {self.fecha} - {self.hora} - {self.codigo_producto}"
+        return f"Factura N° {self.numero_factura} - {self.fecha} - {self.hora} - {self.codigo_productoç}"
