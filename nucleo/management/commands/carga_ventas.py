@@ -117,6 +117,16 @@ class Command(BaseCommand):
                     creadas += 1
                     continue
 
+                existe= Ventas.objects.filter(
+                    numero_factura= numero_factura,
+                    codigo_producto= producto,
+                    fecha= fecha,
+                ).exists()
+
+                if existe:
+                    omitidas += 1
+                    continue
+
                 with transaction.atomic():
                     Ventas.objects.create(
                         numero_factura=numero_factura,
