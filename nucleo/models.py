@@ -25,6 +25,7 @@ class Producto(models.Model):
     lead_time_dias= models.IntegerField(default=1)
     dias_stock_seguridad= models.IntegerField(default=1)
     ciclo_reposicion_dias= models.IntegerField(default=3)
+    dias_historial_ventas= models.IntegerField(default=30)
 
     class Meta:
         managed = True

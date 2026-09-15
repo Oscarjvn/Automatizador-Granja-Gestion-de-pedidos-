@@ -1,0 +1,94 @@
+from datetime import date, timedelta
+from decimal import Decimal
+
+from django.db.models import Min, Sum
+
+from nucleo.models import AnalisisReposicion, Ventas
+
+
+def calcular_parametros(inventario, hoy=None):
+    """
+    Calcula los parámetros de reposición para un InventarioProducto.
+
+    Divisor híbrido:
+        divisor = MIN(dias_historial_ventas, dias_reales_con_datos)
+
+    Donde dias_reales_con_datos = días entre la primera venta y hoy + 1.
+    Si no hay ventas registradas, DDP = 0 y todos los parámetros quedan en 0.
+    """
+    hoy = hoy or date.today()
+    producto = inventario.producto
+
+    # Primera venta registrada para este producto-tienda
+    primera = (
+        Ventas.objects
+        .filter(tienda=inventario.tienda, codigo_producto=producto)
+        .aggregate(primera=Min('fecha'))['primera']
+    )
+
+    if primera is None:
+        # Sin historial: DDP = 0, sin reposición
+        return _datos_sin_ventas(inventario, hoy)
+
+    # Divisor real: días entre primera venta y hoy, con tope la ventana
+    dias_reales = (hoy - primera).days + 1
+    divisor = min(producto.dias_historial_ventas, dias_reales)
+    desde = hoy - timedelta(days=divisor - 1)
+
+    total_vendido = (
+        Ventas.objects
+        .filter(
+            tienda=inventario.tienda,
+            codigo_producto=producto,
+            fecha__gte=desde,
+            fecha__lte=hoy,
+        )
+        .aggregate(total=Sum('cantidad_vendida'))['total']
+    ) or 0
+
+    ddp = Decimal(total_vendido) / Decimal(divisor)
+    stock_seguridad = ddp * producto.dias_stock_seguridad
+    reorder_point = ddp * producto.lead_time_dias + stock_seguridad
+    stock_maximo = reorder_point + ddp * producto.ciclo_reposicion_dias
+
+    return {
+        'periodo_desde': desde,
+        'periodo_hasta': hoy,
+        'dias_analizados': divisor,
+        'promedio_venta_diario': round(ddp, 3),
+        'stock_seguridad': round(stock_seguridad, 2),
+        'reorder_point': round(reorder_point, 2),
+        'stock_maximo': round(stock_maximo, 2),
+        'leadtime': producto.lead_time_dias,
+        'dias_seguridad_usados': producto.dias_stock_seguridad,
+        'ciclo_usado': producto.ciclo_reposicion_dias,
+    }
+
+
+def _datos_sin_ventas(inventario, hoy):
+    """Devuelve parámetros en cero para productos sin historial de ventas."""
+    return {
+        'periodo_desde': hoy,
+        'periodo_hasta': hoy,
+        'dias_analizados': 0,
+        'promedio_venta_diario': Decimal('0.000'),
+        'stock_seguridad': Decimal('0.00'),
+        'reorder_point': Decimal('0.00'),
+        'stock_maximo': Decimal('0.00'),
+        'leadtime': inventario.producto.lead_time_dias,
+        'dias_seguridad_usados': inventario.producto.dias_stock_seguridad,
+        'ciclo_usado': inventario.producto.ciclo_reposicion_dias,
+    }
+
+
+def actualizar_analisis(inventario, hoy=None):
+    """
+    Calcula y persiste el AnalisisReposicion del inventario.
+    Idempotente: correrlo dos veces no duplica.
+    """
+    datos = calcular_parametros(inventario, hoy=hoy)
+    obj, created = AnalisisReposicion.objects.update_or_create(
+        inventario=inventario,
+        defaults=datos,
+    )
+    return obj, created
