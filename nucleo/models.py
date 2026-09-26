@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from nucleo.managers import TenantManager
 
 class Tienda(models.Model):
     id_tienda = models.AutoField(primary_key=True)
@@ -39,12 +40,16 @@ class InventarioProducto(models.Model):
     tienda = models.ForeignKey(Tienda, models.CASCADE, db_column='id_tienda')
     producto = models.ForeignKey(Producto, models.CASCADE, db_column='sku')
     stock_actual = models.IntegerField(default=0)
- 
+
+    objects = TenantManager()
+    todos= models.Manager()
+
 
     class Meta:
         managed = True
         db_table = 'inventario_producto'
         unique_together = (('tienda', 'producto'),)
+        base_manager_name= 'todos'
 
 class Lote(models.Model):
     id_lote = models.AutoField(primary_key=True)
@@ -52,11 +57,14 @@ class Lote(models.Model):
     producto = models.ForeignKey(Producto, models.CASCADE, db_column='id_producto')
     codigo_lote = models.CharField(max_length=50, blank=True, null=True)
     fecha_vencimiento = models.DateField()
-    
+
+    objects= TenantManager()
+    todos= models.Manager()
 
     class Meta:
         managed = True
         db_table = 'lote'
+        base_manager_name= 'todos'
 
 class Pedido(models.Model):
     id_pedido = models.AutoField(primary_key=True)
@@ -69,9 +77,12 @@ class Pedido(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True) 
     estatus = models.CharField(max_length=20, default='PENDIENTE')
 
+    objects= TenantManager()
+    todos= models.Manager()
     class Meta:
         managed = True
         db_table = 'pedido'
+        base_manager_name= 'todos'
 
 class DetallePedido(models.Model):
     id_detalle = models.AutoField(primary_key=True)
@@ -108,6 +119,18 @@ class Ventas(models.Model):
     precio_usd= models.DecimalField(max_digits=10, decimal_places=2)
     #conexion con Tienda
     tienda = models.ForeignKey(Tienda, on_delete=models.PROTECT, db_column='id_tienda')
+
+    objects=TenantManager()
+    todos= models.Manager()
+
+    class Meta: 
+        
+        base_manager_name = 'todos'
+        indexes = [
+            models.Index(fields=['tienda', 'codigo_producto', 'fecha']),
+            models.Index(fields=['fecha']),
+        ]
+
     def __str__(self):
         return f"Factura N° {self.numero_factura} - {self.fecha} - {self.hora} - {self.codigo_productoç}"
 
