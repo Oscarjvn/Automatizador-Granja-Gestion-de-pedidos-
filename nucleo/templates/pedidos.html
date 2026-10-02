@@ -7,7 +7,7 @@
         <thead class="table-dark">
             <tr>
                 <th scope="col">ID Pedido</th>
-                <th scope="col">Usuario (Rol)</th>
+                <th scope="col">Usuario </th>
                 <th scope="col">Tienda</th>
                 <th scope="col">Fecha de Creación</th>
                 <th scope="col">Estatus</th>
@@ -21,7 +21,7 @@
                 <td class="fw-bold">#{{ pedido.id_pedido }}</td>
                 
                 <!-- Usuario y su rol (Navegando por la relación hasta el modelo nativo de Django) -->
-                <td>{{ pedido.usuario.usuario.username }} <span class="text-muted small">({{ pedido.usuario.rol }})</span></td>
+                <td>{{ pedido.usuario.username }}</td>
                 
                 <!-- Tienda -->
                 <td>{{ pedido.tienda.nombre }}</td>
@@ -31,20 +31,24 @@
                 
                 <!-- Estatus (usando get_FOO_display para mostrar la etiqueta amigable y no la clave en mayúsculas) -->
                 <td>
-                    {% if pedido.estatus == 'PENDIENTE' %}
+                    {% if pedido.estatus == 'PE' %}
                         <span class="badge bg-warning text-dark">{{ pedido.get_estatus_display }}</span>
                     {% elif pedido.estatus == 'PROCESANDO' %}
                         <span class="badge bg-primary">{{ pedido.get_estatus_display }}</span>
-                    {% elif pedido.estatus == 'COMPLETADO' %}
+                    {% elif pedido.estatus == 'AP' %}
                         <span class="badge bg-success">{{ pedido.get_estatus_display }}</span>
-                    {% elif pedido.estatus == 'CANCELADO' %}
+                    {% elif pedido.estatus == 'CA' %}
                         <span class="badge bg-danger">{{ pedido.get_estatus_display }}</span>
                     {% endif %}
                 </td>
 
                 <!-- Columna de acciones sugerida -->
                 <td>
-                    <a href="#" class="btn btn-sm btn-outline-secondary">Ver detalle</a>
+                    {% for pedido in pedidos %}
+    
+                        <a href="{% url 'pedido_detalle' pk=pedido.pk %}">Ver detalle</a>
+    
+                     {% endfor %}
                 </td>
             </tr>
             {% empty %}

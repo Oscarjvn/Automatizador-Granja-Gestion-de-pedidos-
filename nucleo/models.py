@@ -67,6 +67,13 @@ class Lote(models.Model):
         base_manager_name= 'todos'
 
 class Pedido(models.Model):
+    class  Estado(models.TextChoices):
+        PENDIENTE= 'PE', 'Pendiente'
+        CANCELADO= 'CA', 'Cancelado'
+        APROBADO= 'AP', 'Aprobado'
+        RECIBIDO= 'RE',  'Recibido'
+
+    
     id_pedido = models.AutoField(primary_key=True)
     tienda = models.ForeignKey(Tienda, models.PROTECT, db_column='id_tienda')
     usuario = models.ForeignKey(
@@ -75,7 +82,14 @@ class Pedido(models.Model):
         related_name='pedidos'
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True) 
-    estatus = models.CharField(max_length=20, default='PENDIENTE')
+    estatus = models.CharField(
+        max_length=20,
+        choices= Estado.choices,
+        default= Estado.PENDIENTE
+
+    )
+    fecha_aprobacion = models.DateTimeField(null=True, blank=True)
+    fecha_recepcion = models.DateTimeField(null=True, blank=True)
 
     objects= TenantManager()
     todos= models.Manager()

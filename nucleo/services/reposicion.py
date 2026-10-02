@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
-
+from django.db.models import F
 from django.db.models import Min, Sum
 
 from nucleo.models import AnalisisReposicion, Ventas
@@ -92,3 +92,31 @@ def actualizar_analisis(inventario, hoy=None):
         defaults=datos,
     )
     return obj, created
+
+
+def productos_a_reponer(tienda=None):
+    """
+    Devuelve lista de dicts con los inventarios que necesitan reposición.
+    """
+    qs = (
+        AnalisisReposicion.objects
+        .select_related('inventario__producto', 'inventario__tienda')
+        .filter(inventario__stock_actual__lte=F('reorder_point'))
+    )
+    if tienda:
+        qs = qs.filter(inventario__tienda=tienda)
+
+    resultado = []
+    for a in qs:
+        resultado.append({
+            'inventario': a.inventario,
+            'producto': a.inventario.producto,
+            'stock_actual': a.inventario.stock_actual,
+            'reorder_point': float(a.reorder_point),
+            'stock_maximo': float(a.stock_maximo),
+            'cantidad_sugerida': a.cantidad_sugerida,
+            'es_critico': a.es_critico,
+            'ddp': float(a.promedio_venta_diario),
+        })
+    resultado.sort(key=lambda x: (not x['es_critico'], -x['cantidad_sugerida']))
+    return resultado

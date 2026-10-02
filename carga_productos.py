@@ -16,11 +16,11 @@ def cargar_productos_excel(archivo_path):
     for _, fila in df.iterrows():
         # Usamos update_or_create para evitar errores de duplicados (como el que tuviste antes)
         obj, created = Producto.objects.update_or_create(
-            sku=fila['sku'],
+            sku=str(fila['sku']).strip(),
             defaults={
                 'nombre': fila['nombre'],
                 'categoria': fila['categoria'],
-                'unidad_empaque': fila['unidad_empaque']
+                
             }
         )
         if created:

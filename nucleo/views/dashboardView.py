@@ -12,7 +12,7 @@ class HomePage(TemplateView):
         context= super().get_context_data(**kwargs)
         hoy= timezone.now()
         dos_meses= hoy + timedelta(days=60)
-        context["pedidos"]= Pedido.objects.filter(estatus= "Borrador")
+        context["pedidos"]= Pedido.objects.all()
         context["inventario"]= InventarioProducto.objects.all()[:30]#aqui obtengo los primeros diez productos del inventario
         context["vencimiento"]=Lote.objects.filter(fecha_vencimiento__range=[hoy, dos_meses]).order_by("fecha_vencimiento")#esto es para filtrar por fecha de vencimiento
         context["tienda"]= Tienda.objects.all()

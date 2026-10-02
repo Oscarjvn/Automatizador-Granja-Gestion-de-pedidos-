@@ -22,11 +22,11 @@ def cargar_inventario_desde_excel(ruta_excel):
         df = pd.read_excel(ruta_excel)
 
         # 1. Eliminar filas donde la tienda o el sku estén completamente vacíos
-        df = df.dropna(subset=['id_tienda', 'sku'])
+        df = df.dropna(subset=['sku'])
 
         # 2. Asegurar que id_tienda y stock_actual sean enteros de Python
-        df['id_tienda'] = df['id_tienda'].astype(int)
-        df['stock_actual'] = df['stock_actual'].fillna(0).astype(int)
+        
+        df['Stock'] = df['Stock'].fillna(0).astype(int)
 
     except Exception as e:
         print(f"❌ Error al leer o procesar la estructura del Excel: {e}")
@@ -40,14 +40,14 @@ def cargar_inventario_desde_excel(ruta_excel):
 
     with transaction.atomic():
         for index, row in df.iterrows():
-            id_tienda = row['id_tienda']
+            id_tienda = 1
             sku_producto = str(row['sku']).strip() # Asegurar que el SKU sea string sin espacios
-            cantidad_stock = row['stock_actual']
+            cantidad_stock = row['Stock']
 
             # Validar existencia de Tienda y Producto en la BD
             try:
                 instancia_tienda = Tienda.objects.get(pk=id_tienda)
-                instancia_producto = Producto.objects.get(pk=sku_producto)
+                instancia_producto = Producto.objects.get(sku=sku_producto)
             except Tienda.DoesNotExist:
                 print(f"⚠️ Fila {index + 2}: La Tienda con ID '{id_tienda}' no existe en la BD. Omitiendo...")
                 errores += 1
@@ -58,7 +58,7 @@ def cargar_inventario_desde_excel(ruta_excel):
                 continue
 
             # Crear o actualizar el stock_actual
-            obj, created = InventarioProducto.objects.update_or_create(
+            obj, created = InventarioProducto.todos.update_or_create(
                 tienda=instancia_tienda,
                 producto=instancia_producto,
                 defaults={
@@ -79,7 +79,7 @@ def cargar_inventario_desde_excel(ruta_excel):
 
 if __name__ == "__main__":
     # Nombre exacto de tu archivo Excel
-    ARCHIVO_EXCEL = "./anexos/inventario_carga.xlsx"
+    ARCHIVO_EXCEL = "./anexos/carga_productos.xlsx"
 
     if os.path.exists(ARCHIVO_EXCEL):
         cargar_inventario_desde_excel(ARCHIVO_EXCEL)

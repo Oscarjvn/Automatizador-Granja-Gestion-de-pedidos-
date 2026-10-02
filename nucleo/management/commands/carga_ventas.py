@@ -83,7 +83,7 @@ class Command(BaseCommand):
                 numero_factura = row['numero_factura']
                 fecha = parse_fecha(row['fecha'])
                 hora = parse_hora(row['hora'])
-                sku = row['producto.codigo_producto']
+                sku = str(row['producto.codigo_producto']).strip()
                 cantidad = int(row['cantidad.cantidad_vendida'])
                 precio = Decimal(str(row['financiero.precio_unitario_usd']))
 
