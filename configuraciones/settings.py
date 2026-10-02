@@ -9,11 +9,14 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # Quick-start development settings - unsuitable for production
@@ -198,4 +201,30 @@ JAZZMIN_UI_TWEAKS = {
         "danger": "btn-danger",
         "success": "btn-success"
     }
+}
+
+# --- Configuración de sincronización de ventas ---
+VENTAS_API_URL = os.environ.get('VENTAS_API_URL', 'http://192.168.20.27:7002/ventas')
+VENTAS_SUCURSAL_DEFAULT = os.environ.get('VENTAS_SUCURSAL_DEFAULT', 'SUC019')
+VENTAS_TIENDA_DEFAULT = int(os.environ.get('VENTAS_TIENDA_DEFAULT', '1'))
+VENTAS_JSON_DIR = BASE_DIR / 'datos' / 'ventas'
+
+
+# Logging para comandos
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR / 'sincronizacion.log',
+        },
+    },
+    'loggers': {
+        'nucleo': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+    },
 }
