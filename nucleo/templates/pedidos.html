@@ -44,11 +44,11 @@
 
                 <!-- Columna de acciones sugerida -->
                 <td>
-                    {% for pedido in pedidos %}
+                   
     
                         <a href="{% url 'pedido_detalle' pk=pedido.pk %}">Ver detalle</a>
     
-                     {% endfor %}
+                     
                 </td>
             </tr>
             {% empty %}

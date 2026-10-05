@@ -1,77 +1,161 @@
+
 {% extends 'base.html' %}
 
+{% block title %}Reposición - Granja{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h1>Productos a reponer</h1>
-    <p class="text-muted">
-        Ajusta las cantidades si es necesario. Si no tocas nada, se pedirá el sugerido.
-    </p>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
-    {% if candidatos %}
-        <form method="post">
-            {% csrf_token %}
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>SKU</th>
-                        <th>Producto</th>
-                        <th>Stock</th>
-                        <th>ROP</th>
-                        <th>DDP</th>
-                        <th>Sugerido</th>
-                        <th>Cantidad a pedir</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for c in candidatos %}
-                    <tr class="{% if c.es_critico %}table-danger{% endif %}">
-                        <td>{{ c.producto.sku }}</td>
-                        <td>{{ c.producto.nombre }}</td>
-                        <td>{{ c.stock_actual }}</td>
-                        <td>{{ c.reorder_point|floatformat:1 }}</td>
-                        <td>{{ c.ddp|floatformat:2 }}</td>
-                        <td>
-                            <strong>{{ c.cantidad_sugerida }}</strong>
-                            <input type="hidden"
-                                   name="sugerido_{{ c.producto.sku }}"
-                                   value="{{ c.cantidad_sugerida }}">
-                        </td>
-                        <td>
-                            <input type="number"
-                                   name="ajustada_{{ c.producto.sku }}"
-                                   value="{{ c.cantidad_sugerida }}"
-                                   min="0"
-                                   class="form-control form-control-sm"
-                                   style="width: 110px;">
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <button type="submit" class="btn btn-primary">
-                Generar pedido
-            </button>
-        </form>
-    {% else %}
-        <div class="alert alert-success">
-            ✅ No hay productos que necesiten reposición.
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Reposición de productos</h2>
+            <div class="text-muted mt-1">
+                Selecciona un cuadrante para ver los productos a reponer.
+            </div>
         </div>
-    {% endif %}
+    </div>
+</div>
 
-    {% if is_paginated %}
-  {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}">«</a>
-  {% endif %}
-  <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-  {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}">»</a>
-  {% endif %}
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible mt-3">
+            {{ message }}
+            <a class="btn-close" data-bs-dismiss="alert"></a>
+        </div>
+    {% endfor %}
 {% endif %}
+
+<div class="row mt-3">
+    <!-- COLUMNA IZQUIERDA: Lista de cuadrantes -->
+    <div class="col-lg-3">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Cuadrantes ({{ cuadrantes|length }})</h3>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for c in cuadrantes %}
+                    <a href="?cuadrante={{ c.nombre|urlencode }}"
+                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center
+                              {% if c.nombre == cuadrante_actual %}active{% endif %}">
+                        <div>
+                            <div class="fw-bold">{{ c.nombre }}</div>
+                            <div class="small text-muted">
+                                {{ c.total_productos }} productos
+                            </div>
+                        </div>
+                        {% if c.a_reponer > 0 %}
+                            <span class="badge bg-danger">{{ c.a_reponer }}</span>
+                        {% else %}
+                            <span class="badge bg-success">0</span>
+                        {% endif %}
+                    </a>
+                {% empty %}
+                    <div class="list-group-item text-muted">
+                        No hay cuadrantes configurados.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: Detalle del cuadrante seleccionado -->
+    <div class="col-lg-9">
+        {% if not cuadrante_actual %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="ti ti-click" style="font-size: 3rem; color: #ccc;"></i>
+                    <h3 class="mt-3 text-muted">Selecciona un cuadrante</h3>
+                    <p class="text-muted">
+                        Elige un cuadrante de la izquierda para ver los productos
+                        que necesitan reposición.
+                    </p>
+                </div>
+            </div>
+
+        {% elif items %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="ti ti-box me-2"></i>{{ cuadrante_actual }}
+                    </h3>
+                    <div class="card-actions">
+                        <span class="badge bg-primary">{{ items|length }} a reponer</span>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="cuadrante" value="{{ cuadrante_actual }}">
+
+                    <div class="table-responsive">
+                        <table class="table table-vcenter">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Producto</th>
+                                    <th class="text-end">Stock</th>
+                                    <th class="text-end">ROP</th>
+                                    <th class="text-end">DDP</th>
+                                    <th class="text-end">Sugerido</th>
+                                    <th class="text-end">Cantidad a pedir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in items %}
+                                <tr class="{% if c.es_critico %}table-danger{% endif %}">
+                                    <td>{{ c.producto.sku }}</td>
+                                    <td>
+                                        {{ c.producto.nombre }}
+                                        {% if c.es_critico %}
+                                            <span class="badge bg-danger ms-1">CRÍTICO</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">{{ c.stock_actual }}</td>
+                                    <td class="text-end">{{ c.reorder_point|floatformat:1 }}</td>
+                                    <td class="text-end">{{ c.ddp|floatformat:2 }}</td>
+                                    <td class="text-end"><strong>{{ c.cantidad_sugerida }}</strong></td>
+                                    <td class="text-end">
+                                        <input type="hidden"
+                                               name="sugerido_{{ c.producto.sku }}"
+                                               value="{{ c.cantidad_sugerida }}">
+                                        <input type="number"
+                                               name="ajustada_{{ c.producto.sku }}"
+                                               value="{{ c.cantidad_sugerida }}"
+                                               min="0"
+                                               class="form-control form-control-sm text-end"
+                                               style="width: 100px; display: inline-block;">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card-footer d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-shopping-cart me-1"></i>
+                            Generar pedido — {{ cuadrante_actual }} ({{ items|length }})
+                        </button>
+                        <a href="{% url 'reposicion' %}" class="btn btn-outline-secondary">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="ti ti-check" style="font-size: 3rem; color: #2fb344;"></i>
+                    <h3 class="mt-3">🎉 {{ cuadrante_actual }}</h3>
+                    <p class="text-muted">
+                        No hay productos de este cuadrante que necesiten reposición.
+                    </p>
+                    <a href="{% url 'reposicion' %}" class="btn btn-secondary mt-2">
+                        Ver otros cuadrantes
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

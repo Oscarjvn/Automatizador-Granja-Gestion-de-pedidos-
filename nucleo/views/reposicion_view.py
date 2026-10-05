@@ -5,7 +5,7 @@ from django.core.paginator import Paginator
 from nucleo.mixin import TiendaRequeridaMixin
 from nucleo.models import Pedido, Producto
 from nucleo.services.pedidos import generar_pedido_sugerido
-from nucleo.services.reposicion import productos_a_reponer
+from nucleo.services.reposicion import (productos_a_reponer, listar_cuadrantes, productos_a_reponer_de_cuadrante)
 
 
 class ReposicionView(TiendaRequeridaMixin, TemplateView):
@@ -24,19 +24,51 @@ class ReposicionView(TiendaRequeridaMixin, TemplateView):
         ctx['page_obj'] = page_obj
         ctx['candidatos'] = page_obj.object_list
         ctx['is_paginated'] = page_obj.has_other_pages()
+        ctx['cuadrantes']= listar_cuadrantes()
+        
+        # ¿Hay un cuadrante seleccionado?
+        cuadrante = self.request.GET.get('cuadrante', '').strip()
+        ctx['cuadrante_actual'] = cuadrante
+
+        if cuadrante:
+            # Validar que el cuadrante existe
+            existe = Producto.objects.filter(cuadrante=cuadrante).exists()
+            if existe:
+                ctx['items'] = productos_a_reponer_de_cuadrante(
+                    cuadrante=cuadrante,
+                    tienda=self.tienda,
+                )
+            else:
+                messages.error(self.request, f"El cuadrante '{cuadrante}' no existe.")
+                ctx['items'] = []
+        else:
+            ctx['items'] = []
+
         return ctx
+       
    
 
     def post(self, request, *args, **kwargs):
+        cuadrante = request.POST.get('cuadrante', '').strip()
         items = self._parse_items(request.POST)
+
+        if not items:
+            messages.warning(request, "No se seleccionó ningún producto.")
+            return redirect(f"{request.path}?cuadrante={cuadrante}" if cuadrante else 'reposicion')
+        
+        
+        
+        
+        
+        
         pedido = generar_pedido_sugerido(self.tienda, request.user, items)
 
         if pedido:
             messages.success(request, f"Pedido #{pedido.pk} creado exitosamente.")
             return redirect('pedido_detalle', pk=pedido.pk)
 
-        messages.warning(request, "No se seleccionó ningún producto.")
-        return redirect('reposicion')
+        messages.error(request, "No se pudo crear el pedido.")
+        return redirect(f"{request.path}?cuadrante={cuadrante}" if cuadrante else 'reposicion')
 
     def _parse_items(self, post_data):
         """

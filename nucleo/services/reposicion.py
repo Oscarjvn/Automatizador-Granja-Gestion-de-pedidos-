@@ -1,9 +1,9 @@
 from datetime import date, timedelta
 from decimal import Decimal
-from django.db.models import F
+from django.db.models import F, Count
 from django.db.models import Min, Sum
 
-from nucleo.models import AnalisisReposicion, Ventas
+from nucleo.models import AnalisisReposicion, Ventas, Producto
 
 
 def calcular_parametros(inventario, hoy=None):
@@ -118,5 +118,71 @@ def productos_a_reponer(tienda=None):
             'es_critico': a.es_critico,
             'ddp': float(a.promedio_venta_diario),
         })
+    resultado.sort(key=lambda x: (not x['es_critico'], -x['cantidad_sugerida']))
+    return resultado
+
+
+def listar_cuadrantes():
+    """
+    Devuelve lista de cuadrantes con su conteo de productos y cuántos
+    necesitan reposición.
+    """
+    totales_catalogo = dict(
+        Producto.objects
+        .exclude(cuadrante__isnull=True)
+        .exclude(cuadrante='')
+        .values_list('cuadrante')
+        .annotate(n=Count('id_producto'))
+        .values_list('cuadrante', 'n')
+    )
+
+    a_reponer = dict(
+        AnalisisReposicion.objects
+        .filter(promedio_venta_diario__gt=0)
+        .filter(inventario__stock_actual__lte=F('reorder_point'))
+        .exclude(inventario__producto__cuadrante__isnull=True)
+        .exclude(inventario__producto__cuadrante='')
+        .values_list('inventario__producto__cuadrante')
+        .annotate(n=Count('inventario'))
+        .values_list('inventario__producto__cuadrante', 'n')
+    )
+
+    resultado = []
+    for cuadrante in sorted(totales_catalogo.keys()):
+        resultado.append({
+            'nombre': cuadrante,
+            'total_productos': totales_catalogo[cuadrante],
+            'a_reponer': a_reponer.get(cuadrante, 0),
+        })
+    return resultado
+
+def productos_a_reponer_de_cuadrante(cuadrante, tienda=None):
+    """Lista de items a reponer de un cuadrante específico."""
+    if not cuadrante:
+        return []
+
+    qs = (
+        AnalisisReposicion.objects
+        .select_related('inventario__producto', 'inventario__tienda')
+        .filter(promedio_venta_diario__gt=0)
+        .filter(inventario__stock_actual__lte=F('reorder_point'))
+        .filter(inventario__producto__cuadrante=cuadrante)
+    )
+    if tienda:
+        qs = qs.filter(inventario__tienda=tienda)
+
+    resultado = []
+    for a in qs:
+        resultado.append({
+            'inventario': a.inventario,
+            'producto': a.inventario.producto,
+            'stock_actual': a.inventario.stock_actual,
+            'reorder_point': float(a.reorder_point),
+            'stock_maximo': float(a.stock_maximo),
+            'cantidad_sugerida': a.cantidad_sugerida,
+            'es_critico': a.es_critico,
+            'ddp': float(a.promedio_venta_diario),
+        })
+
     resultado.sort(key=lambda x: (not x['es_critico'], -x['cantidad_sugerida']))
     return resultado
