@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import redirect
-from django.views.generic import DetailView, TemplateView
-
+from django.views.generic import DetailView, TemplateView, ListView
+from django.core.paginator import Paginator
 from nucleo.mixin import TiendaRequeridaMixin
 from nucleo.models import Pedido, Producto
 from nucleo.services.pedidos import generar_pedido_sugerido
@@ -10,11 +10,22 @@ from nucleo.services.reposicion import productos_a_reponer
 
 class ReposicionView(TiendaRequeridaMixin, TemplateView):
     template_name = 'reposicion.html'
+    paginate_by= 10
+
+    
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['candidatos'] = productos_a_reponer(tienda=self.tienda)
+        productos_reposicion = productos_a_reponer(tienda=self.tienda)
+        paginator= Paginator(productos_reposicion, self.paginate_by)
+        print(type(paginator), paginator)
+        page_obj= paginator.get_page(self.request.GET.get('page'))
+
+        ctx['page_obj'] = page_obj
+        ctx['candidatos'] = page_obj.object_list
+        ctx['is_paginated'] = page_obj.has_other_pages()
         return ctx
+   
 
     def post(self, request, *args, **kwargs):
         items = self._parse_items(request.POST)

@@ -21,6 +21,7 @@ class Producto(models.Model):
     sku = models.CharField(unique=True, max_length=20)
     nombre = models.CharField(max_length=150)
     categoria = models.CharField(max_length=50, blank=True, null=True)
+    cuadrante= models.CharField(max_length=50, blank= True, null=True)
     unidad_empaque = models.IntegerField(blank=True, null=True)
     barra= models.CharField(max_length=100)
     lead_time_dias= models.IntegerField(default=1)
