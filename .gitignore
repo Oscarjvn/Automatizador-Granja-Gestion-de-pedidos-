@@ -11,3 +11,6 @@ db.sqlite3
 datos/
 logs/
 .env
+.env
+.env.local
+.env.*.local
