@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Histórico de ventas{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Histórico de ventas</h2>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mt-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Desde</label>
+                <input type="date" name="desde" value="{{ desde|date:'Y-m-d' }}" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Hasta</label>
+                <input type="date" name="hasta" value="{{ hasta|date:'Y-m-d' }}" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Agrupación</label>
+                <select name="agrupacion" class="form-select">
+                    <option value="dia" {% if agrupacion == 'dia' %}selected{% endif %}>Diaria</option>
+                    <option value="semana" {% if agrupacion == 'semana' %}selected{% endif %}>Semanal</option>
+                    <option value="mes" {% if agrupacion == 'mes' %}selected{% endif %}>Mensual</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Aplicar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Ingresos</div>
+                <div class="h1 mb-0">${{ kpis.total_usd|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Unidades</div>
+                <div class="h1 mb-0">{{ kpis.total_unidades }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Transacciones</div>
+                <div class="h1 mb-0">{{ kpis.total_transacciones }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Ticket promedio</div>
+                <div class="h1 mb-0">${{ kpis.ticket_promedio|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Serie -->
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Ventas en el período ({{ agrupacion }})</h3>
+    </div>
+    <div class="card-body">
+        <canvas id="chart-serie" height="80"></canvas>
+    </div>
+</div>
+
+<!-- Día semana + hora -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Por día de la semana</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chart-dow" height="160"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Por hora del día</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chart-hora" height="160"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ serie|json_script:"serie-data" }}
+{{ dias_semana|json_script:"dow-data" }}
+{{ horas|json_script:"horas-data" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+    const serie = JSON.parse(document.getElementById('serie-data').textContent);
+    const dow = JSON.parse(document.getElementById('dow-data').textContent);
+    const horas = JSON.parse(document.getElementById('horas-data').textContent);
+
+    new Chart(document.getElementById('chart-serie'), {
+        type: 'line',
+        data: {
+            labels: serie.map(d => d.fecha),
+            datasets: [{
+                label: 'USD',
+                data: serie.map(d => d.usd),
+                borderColor: '#206bc4',
+                backgroundColor: 'rgba(32,107,196,0.1)',
+                fill: true,
+                tension: 0.3,
+            }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    new Chart(document.getElementById('chart-dow'), {
+        type: 'bar',
+        data: {
+            labels: dow.map(d => d.dia),
+            datasets: [{ data: dow.map(d => d.usd), backgroundColor: '#206bc4' }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    new Chart(document.getElementById('chart-hora'), {
+        type: 'bar',
+        data: {
+            labels: horas.map(d => d.hora + ':00'),
+            datasets: [{ data: horas.map(d => d.usd), backgroundColor: '#2fb344' }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+</script>
+{% endblock %}

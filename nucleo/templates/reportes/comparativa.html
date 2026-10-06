@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Comparativa de períodos{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Comparativa de períodos</h2>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de períodos -->
+<div class="card mt-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Período anterior (P1)</label>
+                <div class="row g-2">
+                    <div class="col">
+                        <input type="date" name="p1_desde" value="{{ p1_desde|date:'Y-m-d' }}" class="form-control">
+                    </div>
+                    <div class="col">
+                        <input type="date" name="p1_hasta" value="{{ p1_hasta|date:'Y-m-d' }}" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Período actual (P2)</label>
+                <div class="row g-2">
+                    <div class="col">
+                        <input type="date" name="p2_desde" value="{{ p2_desde|date:'Y-m-d' }}" class="form-control">
+                    </div>
+                    <div class="col">
+                        <input type="date" name="p2_hasta" value="{{ p2_hasta|date:'Y-m-d' }}" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Comparar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumen general -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Ingresos</div>
+                <div class="row mt-2">
+                    <div class="col">
+                        <div class="text-muted small">P1 ({{ p1_desde|date:"d/m" }} - {{ p1_hasta|date:"d/m" }})</div>
+                        <div class="h3 mb-0">${{ comparativa.periodo_anterior.usd|floatformat:2 }}</div>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted small">P2 ({{ p2_desde|date:"d/m" }} - {{ p2_hasta|date:"d/m" }})</div>
+                        <div class="h3 mb-0">${{ comparativa.periodo_actual.usd|floatformat:2 }}</div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% if comparativa.variacion_usd > 0 %}
+                        <span class="badge bg-green">▲ {{ comparativa.variacion_usd }}%</span>
+                    {% elif comparativa.variacion_usd < 0 %}
+                        <span class="badge bg-red">▼ {{ comparativa.variacion_usd }}%</span>
+                    {% else %}
+                        <span class="badge bg-secondary">— 0%</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Unidades</div>
+                <div class="row mt-2">
+                    <div class="col">
+                        <div class="text-muted small">P1</div>
+                        <div class="h3 mb-0">{{ comparativa.periodo_anterior.unidades }}</div>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted small">P2</div>
+                        <div class="h3 mb-0">{{ comparativa.periodo_actual.unidades }}</div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% if comparativa.variacion_unidades > 0 %}
+                        <span class="badge bg-green">▲ {{ comparativa.variacion_unidades }}%</span>
+                    {% elif comparativa.variacion_unidades < 0 %}
+                        <span class="badge bg-red">▼ {{ comparativa.variacion_unidades }}%</span>
+                    {% else %}
+                        <span class="badge bg-secondary">— 0%</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cuadrantes -->
+<div class="card mt-3">
+    <div class="card-header"><h3 class="card-title">Variación por cuadrante</h3></div>
+    <div class="table-responsive">
+        <table class="table table-vcenter">
+            <thead>
+                <tr>
+                    <th>Cuadrante</th>
+                    <th class="text-end">P1</th>
+                    <th class="text-end">P2</th>
+                    <th class="text-end">Variación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in cuadrantes %}
+                <tr>
+                    <td>{{ c.cuadrante }}</td>
+                    <td class="text-end">${{ c.anterior|floatformat:2 }}</td>
+                    <td class="text-end">${{ c.actual|floatformat:2 }}</td>
+                    <td class="text-end">
+                        {% if c.variacion > 0 %}
+                            <span class="text-green">▲ {{ c.variacion }}%</span>
+                        {% elif c.variacion < 0 %}
+                            <span class="text-red">▼ {{ c.variacion }}%</span>
+                        {% else %}
+                            <span class="text-muted">— 0%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Productos con mayor variación -->
+<div class="card mt-3">
+    <div class="card-header"><h3 class="card-title">Top 20 variaciones por producto</h3></div>
+    <div class="table-responsive">
+        <table class="table table-vcenter">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th class="text-end">P1</th>
+                    <th class="text-end">P2</th>
+                    <th class="text-end">Var. abs</th>
+                    <th class="text-end">Var. %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in productos %}
+                <tr>
+                    <td>{{ p.sku }}</td>
+                    <td>{{ p.nombre|truncatechars:30 }}</td>
+                    <td class="text-end">${{ p.anterior|floatformat:2 }}</td>
+                    <td class="text-end">${{ p.actual|floatformat:2 }}</td>
+                    <td class="text-end">${{ p.variacion_abs|floatformat:2 }}</td>
+                    <td class="text-end">
+                        {% if p.variacion > 0 %}
+                            <span class="text-green">▲ {{ p.variacion }}%</span>
+                        {% elif p.variacion < 0 %}
+                            <span class="text-red">▼ {{ p.variacion }}%</span>
+                        {% else %}
+                            <span class="text-muted">— 0%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

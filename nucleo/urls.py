@@ -6,6 +6,13 @@ from .views.pedido_detalle_view import PedidoDetalleView
 from .views.vistas_transicion_estados_pedidos import PedidoAprobarView
 from .views.vistas_transicion_estados_pedidos import PedidoCancelarView
 from .views.vistas_transicion_estados_pedidos import PedidoRecibirView
+from .views.inventario_view import InventarioView
+
+from .views.reportes.dashboard_view import DashboardReportesView
+from .views.reportes.historico_view import HistoricoView
+from .views.reportes.rotacion_view import RotacionView
+from .views.reportes.comparativa_view import ComparativaView
+from .views.LogoutView import LogoutView
 
 
 
@@ -17,6 +24,14 @@ urlpatterns= [
     path('pedidos/<int:pk>/aprobar/', PedidoAprobarView.as_view(), name='pedido_aprobar'),
     path('pedidos/<int:pk>/cancelar/', PedidoCancelarView.as_view(), name='pedido_cancelar'),
     path('pedidos/<int:pk>/recibir/', PedidoRecibirView.as_view(), name='pedido_recibir'),
+    path('inventario/', InventarioView.as_view(), name='inventario'),
+    #rutas de analisis de ventas
+    path('reportes/', DashboardReportesView.as_view(), name='reportes'),
+    path('reportes/historico/', HistoricoView.as_view(), name='reportes_historico'),
+    path('reportes/rotacion/', RotacionView.as_view(), name='reportes_rotacion'),
+    path('reportes/comparativa/', ComparativaView.as_view(), name='reportes_comparativa'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    
     
 ]
 

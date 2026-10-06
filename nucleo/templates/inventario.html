@@ -1,2 +1,198 @@
-{extends 'base.html'}
+{% extends 'base.html' %}
 
+{% block title %}Inventario - Granja{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Inventario</h2>
+            <div class="text-muted mt-1">
+                {{ total }} producto{{ total|pluralize }} en {{ request.user.usuario.tienda.nombre }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mt-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Buscar</label>
+                <input type="text"
+                       name="q"
+                       value="{{ filtros.q }}"
+                       class="form-control"
+                       placeholder="SKU o nombre...">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Cuadrante</label>
+                <select name="cuadrante" class="form-select">
+                    <option value="">Todos</option>
+                    {% for c in cuadrantes %}
+                        <option value="{{ c }}" {% if filtros.cuadrante == c %}selected{% endif %}>
+                            {{ c }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="criticos" {% if filtros.estado == 'criticos' %}selected{% endif %}>
+                        🔴 Críticos
+                    </option>
+                    <option value="reponer" {% if filtros.estado == 'reponer' %}selected{% endif %}>
+                        🟡 A reponer
+                    </option>
+                    <option value="ok" {% if filtros.estado == 'ok' %}selected{% endif %}>
+                        🟢 OK
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Ordenar por</label>
+                <select name="orden" class="form-select">
+                    <option value="-stock" {% if filtros.orden == '-stock' %}selected{% endif %}>Mayor stock</option>
+                    <option value="stock" {% if filtros.orden == 'stock' %}selected{% endif %}>Menor stock</option>
+                    <option value="nombre" {% if filtros.orden == 'nombre' %}selected{% endif %}>Nombre (A-Z)</option>
+                    <option value="-ddp" {% if filtros.orden == '-ddp' %}selected{% endif %}>Mayor demanda</option>
+                    <option value="-rop" {% if filtros.orden == '-rop' %}selected{% endif %}>Mayor ROP</option>
+                </select>
+            </div>
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="ti ti-search"></i>
+                </button>
+            </div>
+        </form>
+
+        {% if filtros.q or filtros.cuadrante or filtros.estado %}
+            <div class="mt-2">
+                <a href="{% url 'inventario' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="ti ti-x me-1"></i>Limpiar filtros
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card mt-3">
+    <div class="table-responsive">
+        <table class="table table-vcenter">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Cuadrante</th>
+                    <th class="text-end">Stock</th>
+                    <th class="text-end">ROP</th>
+                    <th class="text-end">DDP</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-end">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr class="{% if item.es_critico %}table-danger{% endif %}">
+                    <td>{{ item.producto.sku }}</td>
+                    <td>{{ item.producto.nombre }}</td>
+                    <td>
+                        {% if item.producto.cuadrante %}
+                            <span class="badge bg-blue-lt">{{ item.producto.cuadrante }}</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <strong>{{ item.stock_actual }}</strong>
+                    </td>
+                    <td class="text-end">{{ item.reorder_point|floatformat:1 }}</td>
+                    <td class="text-end">{{ item.ddp|floatformat:2 }}</td>
+                    <td class="text-center">
+                        {% if item.es_critico %}
+                            <span class="badge bg-danger">🔴 Crítico</span>
+                        {% elif item.necesita_reposicion %}
+                            <span class="badge bg-warning text-dark">🟡 Reponer</span>
+                        {% elif item.ddp == 0 %}
+                            <span class="badge bg-secondary">Sin demanda</span>
+                        {% else %}
+                            <span class="badge bg-success">🟢 OK</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if item.necesita_reposicion and item.producto.cuadrante %}
+                            <a href="{% url 'reposicion' %}?cuadrante={{ item.producto.cuadrante|urlencode }}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="ti ti-shopping-cart"></i>
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        No se encontraron productos con esos filtros.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer d-flex align-items-center">
+        <p class="m-0 text-muted">
+            Mostrando <span>{{ page_obj.start_index }}</span>
+            a <span>{{ page_obj.end_index }}</span>
+            de <span>{{ total }}</span> productos
+        </p>
+        <ul class="pagination m-0 ms-auto">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% for k, v in filtros.items %}{% if v %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}pagina={{ page_obj.previous_page_number }}">
+                        <i class="ti ti-chevron-left"></i>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="ti ti-chevron-left"></i></span>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for k, v in filtros.items %}{% if v %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}pagina={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% for k, v in filtros.items %}{% if v %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}pagina={{ page_obj.next_page_number }}">
+                        <i class="ti ti-chevron-right"></i>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="ti ti-chevron-right"></i></span>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

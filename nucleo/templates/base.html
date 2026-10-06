@@ -39,7 +39,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="">
+                            <a class="nav-link" href="{% url 'inventario' %}">
                                 <span class="nav-link-icon"><i class="ti ti-box"></i></span>
                                 <span class="nav-link-title">Inventario</span>
                             </a>
@@ -62,6 +62,18 @@
                                 <span class="nav-link-title">Vencimientos</span>
                             </a>
                         </li>
+                        <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#navbar-reportes" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+        <span class="nav-link-icon"><i class="ti ti-chart-bar"></i></span>
+        <span class="nav-link-title">Reportes</span>
+    </a>
+    <div class="dropdown-menu">
+        <a class="dropdown-item" href="{% url 'reportes' %}">Dashboard</a>
+        <a class="dropdown-item" href="{% url 'reportes_historico' %}">Histórico</a>
+        <a class="dropdown-item" href="{% url 'reportes_rotacion' %}">Rotación</a>
+        <a class="dropdown-item" href="{% url 'reportes_comparativa' %}">Comparativa</a>
+    </div>
+</li>
                     </ul>
                 </div>
             </div>
@@ -87,7 +99,14 @@
                             <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                                 <a href="{% url 'admin:index' %}" class="dropdown-item">Admin</a>
                                 <div class="dropdown-divider"></div>
-                                <a href="{% url 'logout' %}" class="dropdown-item">Cerrar sesión</a>
+                                <form action="{% url 'logout' %}" method="post" class="inline">
+                                    {% csrf_token %}
+                                    <!-- Opción B: Estilo de Enlace de texto plano -->
+                                        <button type="submit" class="text-gray-600 hover:text-red-600 font-normal transition duration-150 background-transparent border-none p-0 cursor-pointer">
+                                                             Cerrar sesión
+                                        </button>
+                                </form>
+
                             </div>
                         </div>
                     </div>

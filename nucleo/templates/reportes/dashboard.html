@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes - Dashboard{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Reportes</h2>
+            <div class="text-muted mt-1">
+                Últimos 30 días ({{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }})
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPIs principales -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Ingresos del período</div>
+                <div class="d-flex align-items-baseline">
+                    <div class="h1 mb-0 me-2">${{ kpis.total_usd|floatformat:2 }}</div>
+                </div>
+                <div class="mt-2">
+                    {% if var_usd > 0 %}
+                        <span class="text-green">▲ {{ var_usd }}%</span>
+                    {% elif var_usd < 0 %}
+                        <span class="text-red">▼ {{ var_usd }}%</span>
+                    {% else %}
+                        <span class="text-muted">— 0%</span>
+                    {% endif %}
+                    <span class="text-muted small ms-1">vs período anterior</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Unidades vendidas</div>
+                <div class="h1 mb-0">{{ kpis.total_unidades }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Transacciones</div>
+                <div class="h1 mb-0">{{ kpis.total_transacciones }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Ticket promedio</div>
+                <div class="h1 mb-0">${{ kpis.ticket_promedio|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Serie diaria -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Ventas diarias</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chart-diaria" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ABC + Días semana -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Clasificación ABC</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-4 text-center">
+                        <div class="h1 text-red">{{ abc.resumen.A.cantidad }}</div>
+                        <div class="text-muted">Clase A</div>
+                        <div class="small">{{ abc.resumen.A.porcentaje_usd }}% del ingreso</div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="h1 text-warning">{{ abc.resumen.B.cantidad }}</div>
+                        <div class="text-muted">Clase B</div>
+                        <div class="small">{{ abc.resumen.B.porcentaje_usd }}% del ingreso</div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="h1 text-muted">{{ abc.resumen.C.cantidad }}</div>
+                        <div class="text-muted">Clase C</div>
+                        <div class="small">{{ abc.resumen.C.porcentaje_usd }}% del ingreso</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Ventas por día de la semana</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="chart-dow" height="140"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top productos -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top 10 por ingreso</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        {% for p in top_usd %}
+                        <tr>
+                            <td>{{ p.sku }}</td>
+                            <td>{{ p.nombre|truncatechars:30 }}</td>
+                            <td class="text-end fw-bold">${{ p.usd|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top 10 por unidades</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        {% for p in top_unidades %}
+                        <tr>
+                            <td>{{ p.sku }}</td>
+                            <td>{{ p.nombre|truncatechars:30 }}</td>
+                            <td class="text-end fw-bold">{{ p.unidades }} uds</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cuadrantes -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Ingresos por cuadrante</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter">
+                    <thead>
+                        <tr>
+                            <th>Cuadrante</th>
+                            <th class="text-end">Ingresos</th>
+                            <th class="text-end">Unidades</th>
+                            <th class="text-end">Transacciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in cuadrantes %}
+                        <tr>
+                            <td>{{ c.cuadrante }}</td>
+                            <td class="text-end fw-bold">${{ c.usd|floatformat:2 }}</td>
+                            <td class="text-end">{{ c.unidades }}</td>
+                            <td class="text-end">{{ c.transacciones }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ serie_diaria|json_script:"serie-diaria-data" }}
+{{ dias_semana|json_script:"dow-data" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+    const serieData = JSON.parse(document.getElementById('serie-diaria-data').textContent);
+    const dowData = JSON.parse(document.getElementById('dow-data').textContent);
+
+    // Gráfico serie diaria
+    new Chart(document.getElementById('chart-diaria'), {
+        type: 'line',
+        data: {
+            labels: serieData.map(d => d.fecha),
+            datasets: [{
+                label: 'Ingresos USD',
+                data: serieData.map(d => d.usd),
+                borderColor: '#206bc4',
+                backgroundColor: 'rgba(32,107,196,0.1)',
+                fill: true,
+                tension: 0.3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // Gráfico día de semana
+    new Chart(document.getElementById('chart-dow'), {
+        type: 'bar',
+        data: {
+            labels: dowData.map(d => d.dia),
+            datasets: [{
+                label: 'Ingresos USD',
+                data: dowData.map(d => d.usd),
+                backgroundColor: '#206bc4',
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
+{% endblock %}

@@ -138,7 +138,7 @@ INTERNAL_IPS = [
 ]
 
 LOGIN_REDIRECT_URL= "home"
-LOGOUT_REDIRECT_URL = "/login/"
+LOGOUT_REDIRECT_URL = "login"
 
 JAZZMIN_SETTINGS = {
     # Título de la ventana del navegador

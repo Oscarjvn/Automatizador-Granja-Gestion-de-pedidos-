@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Análisis de rotación{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Análisis de rotación</h2>
+            <div class="text-muted mt-1">{{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mt-3">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Desde</label>
+                <input type="date" name="desde" value="{{ desde|date:'Y-m-d' }}" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Hasta</label>
+                <input type="date" name="hasta" value="{{ hasta|date:'Y-m-d' }}" class="form-control">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">Aplicar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ABC resumen -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-md-4">
+        <div class="card border-danger">
+            <div class="card-body">
+                <div class="subheader">Clase A</div>
+                <div class="h1 mb-0 text-danger">{{ abc.resumen.A.cantidad }}</div>
+                <div class="text-muted">{{ abc.resumen.A.porcentaje_usd }}% del ingreso</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-body">
+                <div class="subheader">Clase B</div>
+                <div class="h1 mb-0 text-warning">{{ abc.resumen.B.cantidad }}</div>
+                <div class="text-muted">{{ abc.resumen.B.porcentaje_usd }}% del ingreso</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">Clase C</div>
+                <div class="h1 mb-0 text-muted">{{ abc.resumen.C.cantidad }}</div>
+                <div class="text-muted">{{ abc.resumen.C.porcentaje_usd }}% del ingreso</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top productos -->
+<div class="row row-deck row-cards mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Top 20 por ingreso</h3></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-vcenter">
+                    <thead>
+                        <tr><th>SKU</th><th>Producto</th><th class="text-end">USD</th><th class="text-end">Uds</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in top_usd %}
+                        <tr>
+                            <td>{{ p.sku }}</td>
+                            <td>{{ p.nombre|truncatechars:28 }}</td>
+                            <td class="text-end">${{ p.usd|floatformat:2 }}</td>
+                            <td class="text-end">{{ p.unidades }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Top 20 por unidades</h3></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-vcenter">
+                    <thead>
+                        <tr><th>SKU</th><th>Producto</th><th class="text-end">Uds</th><th class="text-end">USD</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in top_unidades %}
+                        <tr>
+                            <td>{{ p.sku }}</td>
+                            <td>{{ p.nombre|truncatechars:28 }}</td>
+                            <td class="text-end fw-bold">{{ p.unidades }}</td>
+                            <td class="text-end">${{ p.usd|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis ABC detallado -->
+<div class="card mt-3">
+    <div class="card-header"><h3 class="card-title">Curva ABC — Top 100 productos</h3></div>
+    <div class="table-responsive">
+        <table class="table table-vcenter">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Clase</th>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th class="text-end">USD</th>
+                    <th class="text-end">%</th>
+                    <th class="text-end">% acumulado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in abc_top %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        {% if p.clase == 'A' %}<span class="badge bg-danger">A</span>
+                        {% elif p.clase == 'B' %}<span class="badge bg-warning">B</span>
+                        {% else %}<span class="badge bg-secondary">C</span>{% endif %}
+                    </td>
+                    <td>{{ p.sku }}</td>
+                    <td>{{ p.nombre|truncatechars:35 }}</td>
+                    <td class="text-end">${{ p.usd|floatformat:2 }}</td>
+                    <td class="text-end">{{ p.pct_participacion }}%</td>
+                    <td class="text-end">{{ p.pct_acumulado }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Sin movimiento -->
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title text-danger">
+            ⚠️ Productos sin movimiento (60+ días, con stock)
+        </h3>
+        <div class="card-actions">
+            <span class="badge bg-danger">{{ sin_movimiento|length }}</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-vcenter">
+            <thead>
+                <tr><th>SKU</th><th>Producto</th><th>Cuadrante</th><th class="text-end">Stock</th></tr>
+            </thead>
+            <tbody>
+                {% for p in sin_movimiento|slice:":50" %}
+                <tr>
+                    <td>{{ p.sku }}</td>
+                    <td>{{ p.nombre|truncatechars:30 }}</td>
+                    <td>{{ p.cuadrante }}</td>
+                    <td class="text-end text-danger fw-bold">{{ p.stock_actual }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-3">
+                    ✓ Todos los productos con stock han tenido movimiento.
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Cuadrantes -->
+<div class="card mt-3">
+    <div class="card-header"><h3 class="card-title">Ingresos por cuadrante</h3></div>
+    <div class="table-responsive">
+        <table class="table table-vcenter">
+            <thead>
+                <tr><th>Cuadrante</th><th class="text-end">USD</th><th class="text-end">Unidades</th><th class="text-end">Transacciones</th></tr>
+            </thead>
+            <tbody>
+                {% for c in cuadrantes %}
+                <tr>
+                    <td>{{ c.cuadrante }}</td>
+                    <td class="text-end fw-bold">${{ c.usd|floatformat:2 }}</td>
+                    <td class="text-end">{{ c.unidades }}</td>
+                    <td class="text-end">{{ c.transacciones }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
