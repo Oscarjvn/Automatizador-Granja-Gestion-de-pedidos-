@@ -26,10 +26,10 @@ def kpis_periodo(tienda, desde, hasta):
     """KPIs agregados del período."""
     qs = _base_qs(tienda, desde, hasta)
     agg = qs.aggregate(
-        total_usd=Sum(INGRESO),
-        total_unidades=Sum('cantidad_vendida'),
-        total_transacciones=Count('id_venta'),
-    )
+    total_usd=Sum(INGRESO),
+    total_unidades=Sum('cantidad_vendida'),
+    total_transacciones=Count('numero_factura', distinct=True),   # ← FIX
+)
     total_usd = agg['total_usd'] or Decimal('0')
     total_trans = agg['total_transacciones'] or 0
     ticket_promedio = (total_usd / total_trans) if total_trans else Decimal('0')
