@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Vencimientos{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Vencimientos</h2>
+            <div class="text-muted mt-1">
+                Alertas de lotes vencidos y por vencer en {{ dias_alerta }} días.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3 border-danger">
+    <div class="card-header bg-danger text-white">
+        🔴 Lotes Vencidos ({{ vencidos|length }})
+    </div>
+    {% if vencidos %}
+    <div class="table-responsive">
+        <table class="table table-vcenter">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Lote</th>
+                    <th class="text-end">Cantidad</th>
+                    <th>Venció</th>
+                    <th>Días</th>
+                    <th>Origen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lote in vencidos %}
+                <tr>
+                    <td>{{ lote.producto.sku }}</td>
+                    <td>{{ lote.producto.nombre }}</td>
+                    <td><small>{{ lote.codigo_lote|default:"—" }}</small></td>
+                    <td class="text-end">{{ lote.cantidad }}</td>
+                    <td>{{ lote.fecha_vencimiento|date:"d/m/Y" }}</td>
+                    <td class="text-danger fw-bold">{{ lote.dias_restantes }} días</td>
+                    <td>
+                        {% if lote.pedido_origen %}
+                            <a href="{% url 'pedido_detalle' lote.pedido_origen.pk %}">
+                                Pedido #{{ lote.pedido_origen.pk }}
+                            </a>
+                        {% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">No hay lotes vencidos.</div>
+    {% endif %}
+</div>
+
+<div class="card mt-3 border-warning">
+    <div class="card-header bg-warning">
+        🟡 Por Vencer en {{ dias_alerta }} días ({{ por_vencer|length }})
+    </div>
+    {% if por_vencer %}
+    <div class="table-responsive">
+        <table class="table table-vcenter">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Lote</th>
+                    <th class="text-end">Cantidad</th>
+                    <th>Vence</th>
+                    <th>Días</th>
+                    <th>Origen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lote in por_vencer %}
+                <tr>
+                    <td>{{ lote.producto.sku }}</td>
+                    <td>{{ lote.producto.nombre }}</td>
+                    <td><small>{{ lote.codigo_lote|default:"—" }}</small></td>
+                    <td class="text-end">{{ lote.cantidad }}</td>
+                    <td>{{ lote.fecha_vencimiento|date:"d/m/Y" }}</td>
+                    <td class="text-warning fw-bold">{{ lote.dias_restantes }} días</td>
+                    <td>
+                        {% if lote.pedido_origen %}
+                            <a href="{% url 'pedido_detalle' lote.pedido_origen.pk %}">
+                                Pedido #{{ lote.pedido_origen.pk }}
+                            </a>
+                        {% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">No hay lotes próximos a vencer.</div>
+    {% endif %}
+</div>
+{% endblock %}

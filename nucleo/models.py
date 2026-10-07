@@ -58,6 +58,22 @@ class Lote(models.Model):
     producto = models.ForeignKey(Producto, models.CASCADE, db_column='id_producto')
     codigo_lote = models.CharField(max_length=50, blank=True, null=True)
     fecha_vencimiento = models.DateField()
+    cantidad = models.IntegerField(default=0, help_text='Unidades en este lote.')
+
+    pedido_origen = models.ForeignKey(
+        'Pedido',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='lotes_generados',
+        db_column='id_pedido_origen',
+    )
+    detalle_origen = models.ForeignKey(
+        'DetallePedido',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='lotes_generados',
+        db_column='id_detalle_origen',
+    )
 
     objects= TenantManager()
     todos= models.Manager()
@@ -66,6 +82,19 @@ class Lote(models.Model):
         managed = True
         db_table = 'lote'
         base_manager_name= 'todos'
+        ordering = ['fecha_vencimiento']
+    
+    def __str__(self):
+        return f"{self.producto.sku} — vence {self.fecha_vencimiento}"
+
+    @property
+    def dias_restantes(self):
+        from datetime import date
+        return (self.fecha_vencimiento - date.today()).days
+
+    @property
+    def esta_vencido(self):
+        return self.dias_restantes < 0
 
 class Pedido(models.Model):
     class  Estado(models.TextChoices):

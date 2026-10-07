@@ -1,136 +1,224 @@
 {% extends 'base.html' %}
 
+{% block title %}Pedido #{{ pedido.pk }}{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="page-header d-print-none">
+<div class="page-header d-print-none">
     <div class="row align-items-center">
         <div class="col">
             <h2 class="page-title">Pedido #{{ pedido.pk }}</h2>
         </div>
         <div class="col-auto ms-auto d-print-none">
-            <a href="{% url 'exportar_pedido' pedido.pk %}"
-               class="btn btn-success">
-                <i class="ti ti-file-spreadsheet me-1"></i>
-                Exportar Excel
+            <a href="{% url 'exportar_pedido' pedido.pk %}" class="btn btn-success">
+                <i class="ti ti-file-spreadsheet me-1"></i> Exportar Excel
             </a>
         </div>
     </div>
 </div>
-    <h1>Pedido #{{ pedido.pk }}</h1>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
-    <p class="text-muted">
-        <strong>Tienda:</strong> {{ pedido.tienda }} |
-        <strong>Creado:</strong> {{ pedido.fecha_creacion|date:"d/m/Y H:i" }} |
-        <strong>Estado:</strong>
-        <span class="badge
-            {% if pedido.estatus == 'PE' %}bg-warning text-dark
-            {% elif pedido.estatus == 'AP' %}bg-info text-dark
-            {% elif pedido.estatus == 'RE' %}bg-success
-            {% elif pedido.estatus == 'CA' %}bg-danger
-            {% endif %}">
-            {{ pedido.get_estatus_display }}
-        </span>
-    </p>
-
-    {% if pedido.fecha_aprobacion %}
-        <p class="text-muted small mb-1">
-            Aprobado: {{ pedido.fecha_aprobacion|date:"d/m/Y H:i" }}
-        </p>
-    {% endif %}
-    {% if pedido.fecha_recepcion %}
-        <p class="text-muted small mb-1">
-            Recibido: {{ pedido.fecha_recepcion|date:"d/m/Y H:i" }}
-        </p>
-    {% endif %}
-        <div class="page-header d-print-none">
-    <div class="row align-items-center">
-        <div class="col">
-            <h2 class="page-title">Pedidos</h2>
-            <div class="text-muted mt-1">{{ total_pedidos }} pedidos</div>
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible mt-3">
+            {{ message }}
+            <a class="btn-close" data-bs-dismiss="alert"></a>
         </div>
-        
+    {% endfor %}
+{% endif %}
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Tienda:</strong> {{ pedido.tienda.nombre }}</p>
+                <p><strong>Solicitante:</strong> {{ pedido.usuario.get_full_name|default:pedido.usuario.username }}</p>
+                <p><strong>Creado:</strong> {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p>
+                    <strong>Estado:</strong>
+                    <span class="badge
+                        {% if pedido.estatus == 'PE' %}bg-warning text-dark
+                        {% elif pedido.estatus == 'AP' %}bg-info text-dark
+                        {% elif pedido.estatus == 'RE' %}bg-success
+                        {% elif pedido.estatus == 'CA' %}bg-danger
+                        {% endif %}">
+                        {{ pedido.get_estatus_display }}
+                    </span>
+                </p>
+                {% if pedido.fecha_aprobacion %}
+                    <p><strong>Aprobado:</strong> {{ pedido.fecha_aprobacion|date:"d/m/Y H:i" }}</p>
+                {% endif %}
+                {% if pedido.fecha_recepcion %}
+                    <p><strong>Recibido:</strong> {{ pedido.fecha_recepcion|date:"d/m/Y H:i" }}</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
-    <form method="post">
-        {% csrf_token %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>SKU</th>
-                    <th>Producto</th>
-                    <th>Sugerida</th>
-                    <th>Ajustada</th>
-                    <th>Recibida</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for d in detalles %}
-                <tr>
-                    <td>{{ d.producto.sku }}</td>
-                    <td>{{ d.producto.nombre }}</td>
-                    <td>{{ d.cant_sugerida }}</td>
-                    <td>
-                        {% if d.cant_ajustada %}
-                            <span class="badge bg-warning text-dark">{{ d.cant_ajustada }}</span>
-                        {% else %}
-                            <span class="text-muted">—</span>
-                        {% endif %}
-                    </td>
-                    <td>
+
+<form method="post" class="mt-3" id="form-recibir">
+    {% csrf_token %}
+
+    {% if pedido.estatus == 'AP' %}
+        <div class="alert alert-info">
+            <i class="ti ti-info-circle me-1"></i>
+            Registra los lotes recibidos. Un producto puede venir en varios lotes con fechas distintas.
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Producto</th>
+                        <th class="text-end">Sug.</th>
+                        <th class="text-end">Ajust.</th>
+                        <th class="text-end">Recibida</th>
                         {% if pedido.estatus == 'AP' %}
-                            <input type="number"
-                                   name="recibida_{{ d.pk }}"
-                                   value="{{ d.cant_ajustada|default:d.cant_sugerida }}"
-                                   min="0"
-                                   class="form-control form-control-sm"
-                                   style="width: 100px;">
+                            <th style="min-width: 420px;">Lotes recibidos</th>
                         {% else %}
-                            {{ d.cant_recibida|default:"—" }}
+                            <th>Lotes registrados</th>
                         {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <div class="d-flex gap-2 flex-wrap">
-            {% if pedido.estatus == 'PE' %}
-                <button type="submit"
-                        formaction="{% url 'pedido_aprobar' pedido.pk %}"
-                        formnovalidate
-                        class="btn btn-info">
-                    Aprobar pedido
-                </button>
-            {% endif %}
-
-            {% if pedido.estatus == 'AP' %}
-                <button type="submit"
-                        formaction="{% url 'pedido_recibir' pedido.pk %}"
-                        class="btn btn-success">
-                    Recibir y actualizar stock
-                </button>
-            {% endif %}
-
-            {% if pedido.estatus == 'PE' or pedido.estatus == 'AP' %}
-                <button type="submit"
-                        formaction="{% url 'pedido_cancelar' pedido.pk %}"
-                        formnovalidate
-                        class="btn btn-outline-danger"
-                        onclick="return confirm('¿Cancelar este pedido?');">
-                    Cancelar
-                </button>
-            {% endif %}
-
-            <a href="{% url 'reposicion' %}" class="btn btn-secondary">
-                Volver a reposición
-            </a>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in detalles %}
+                    <tr>
+                        <td>{{ d.producto.sku }}</td>
+                        <td>{{ d.producto.nombre }}</td>
+                        <td class="text-end">{{ d.cant_sugerida }}</td>
+                        <td class="text-end">
+                            {% if d.cant_ajustada %}
+                                <span class="badge bg-warning text-dark">{{ d.cant_ajustada }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if pedido.estatus == 'AP' %}
+                                <input type="number"
+                                       name="recibida_{{ d.pk }}"
+                                       value="{{ d.cant_ajustada|default:d.cant_sugerida }}"
+                                       min="0"
+                                       class="form-control form-control-sm text-end"
+                                       style="width: 90px; display: inline-block;">
+                            {% else %}
+                                {{ d.cant_recibida|default:"—" }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if pedido.estatus == 'AP' %}
+                                <div class="lotes-container" data-detalle-pk="{{ d.pk }}"></div>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary mt-1 btn-agregar-lote"
+                                        data-detalle-pk="{{ d.pk }}">
+                                    <i class="ti ti-plus"></i> Agregar lote
+                                </button>
+                            {% else %}
+                                {% for lote in d.lotes_generados.all %}
+                                    <div class="small">
+                                        📦 {{ lote.cantidad }} uds — vence {{ lote.fecha_vencimiento|date:"d/m/Y" }}
+                                    </div>
+                                {% empty %}
+                                    <span class="text-muted">—</span>
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    </form>
-</div>
+
+        {% if pedido.estatus == 'AP' %}
+        <div class="card-footer d-flex gap-2">
+            <button type="submit"
+                    formaction="{% url 'pedido_recibir' pedido.pk %}"
+                    class="btn btn-success">
+                <i class="ti ti-check me-1"></i> Marcar como RECIBIDO
+            </button>
+            <button type="submit"
+                    formaction="{% url 'pedido_cancelar' pedido.pk %}"
+                    formnovalidate
+                    class="btn btn-outline-danger"
+                    onclick="return confirm('¿Cancelar este pedido?');">
+                Cancelar pedido
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if pedido.estatus == 'PE' %}
+        <div class="mt-3 d-flex gap-2">
+            <button type="submit"
+                    formaction="{% url 'pedido_aprobar' pedido.pk %}"
+                    formnovalidate
+                    class="btn btn-info">Aprobar</button>
+            <button type="submit"
+                    formaction="{% url 'pedido_cancelar' pedido.pk %}"
+                    formnovalidate
+                    class="btn btn-outline-danger"
+                    onclick="return confirm('¿Cancelar este pedido?');">Cancelar</button>
+        </div>
+    {% endif %}
+
+    <div class="mt-3">
+        <a href="{% url 'pedidos' %}" class="btn btn-secondary">← Volver</a>
+    </div>
+</form>
+
+{% if pedido.estatus == 'AP' %}
+<script>
+(function() {
+    const contadores = {};
+
+    function nextIdx(detallePk) {
+        if (!(detallePk in contadores)) contadores[detallePk] = 0;
+        return contadores[detallePk]++;
+    }
+
+    function crearFila(detallePk) {
+        const idx = nextIdx(detallePk);
+        const row = document.createElement('div');
+        row.className = 'd-flex gap-2 align-items-center mb-1';
+        row.innerHTML = `
+            <input type="number"
+                   name="lote_cantidad_${detallePk}_${idx}"
+                   placeholder="Cant."
+                   min="1"
+                   class="form-control form-control-sm text-end"
+                   style="width: 80px;">
+            <span class="text-muted small">uds</span>
+            <input type="date"
+                   name="lote_vencimiento_${detallePk}_${idx}"
+                   class="form-control form-control-sm"
+                   style="width: 160px;">
+            <button type="button"
+                    class="btn btn-sm btn-icon btn-outline-danger btn-eliminar">
+                <i class="ti ti-trash"></i>
+            </button>
+        `;
+        row.querySelector('.btn-eliminar').addEventListener('click', () => row.remove());
+        return row;
+    }
+
+    document.querySelectorAll('.lotes-container').forEach(container => {
+        const detallePk = container.dataset.detallePk;
+        container.appendChild(crearFila(detallePk));
+    });
+
+    document.querySelectorAll('.btn-agregar-lote').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const detallePk = this.dataset.detallePk;
+            const container = document.querySelector(
+                `.lotes-container[data-detalle-pk="${detallePk}"]`
+            );
+            container.appendChild(crearFila(detallePk));
+        });
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

@@ -7,7 +7,7 @@ from .views.vistas_transicion_estados_pedidos import PedidoAprobarView
 from .views.vistas_transicion_estados_pedidos import PedidoCancelarView
 from .views.vistas_transicion_estados_pedidos import PedidoRecibirView
 from .views.inventario_view import InventarioView
-
+from .views.vencimientos_view import VencimientosView
 from .views.reportes.dashboard_view import DashboardReportesView
 from .views.reportes.historico_view import HistoricoView
 from .views.reportes.rotacion_view import RotacionView
@@ -46,6 +46,7 @@ urlpatterns= [
      # Exportaciones
     path('pedidos/<int:pk>/exportar/', ExportarPedidoView.as_view(), name='exportar_pedido'),
     path('pedidos/exportar/', ExportarListaPedidosView.as_view(), name='exportar_lista_pedidos'),
+    path('vencimientos/', VencimientosView.as_view(), name='vencimientos'),
     
 ]
 
