@@ -21,7 +21,7 @@ def calcular_parametros(inventario, hoy=None):
 
     # Primera venta registrada para este producto-tienda
     primera = (
-        Ventas.objects
+        Ventas.todos
         .filter(tienda=inventario.tienda, codigo_producto=producto)
         .aggregate(primera=Min('fecha'))['primera']
     )
@@ -36,7 +36,7 @@ def calcular_parametros(inventario, hoy=None):
     desde = hoy - timedelta(days=divisor - 1)
 
     total_vendido = (
-        Ventas.objects
+        Ventas.todos
         .filter(
             tienda=inventario.tienda,
             codigo_producto=producto,

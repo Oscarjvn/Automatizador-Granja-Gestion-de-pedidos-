@@ -14,7 +14,7 @@ from .views.reportes.rotacion_view import RotacionView
 from .views.reportes.comparativa_view import ComparativaView
 from .views.LogoutView import LogoutView
 from django.contrib.auth import views as auth_views
-
+from .views.exportar_view import ExportarPedidoView, ExportarListaPedidosView
 
 urlpatterns= [
     path("home", HomePage.as_view(), name="home"),
@@ -43,7 +43,9 @@ urlpatterns= [
     path('reset/done/',
          auth_views.PasswordResetCompleteView.as_view(),
          name='password_reset_complete'),
-    
+     # Exportaciones
+    path('pedidos/<int:pk>/exportar/', ExportarPedidoView.as_view(), name='exportar_pedido'),
+    path('pedidos/exportar/', ExportarListaPedidosView.as_view(), name='exportar_lista_pedidos'),
     
 ]
 
