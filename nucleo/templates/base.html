@@ -57,9 +57,9 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="">
+                            <a class="nav-link" href="{% url 'reportes_prediccion' %}">
                                 <span class="nav-link-icon"><i class="ti ti-calendar-exclamation"></i></span>
-                                <span class="nav-link-title">Vencimientos</span>
+                                <span class="nav-link-title">Prediccion</span>
                             </a>
                         </li>
                         <li class="nav-item dropdown">
@@ -79,7 +79,8 @@
         <span class="nav-link-icon"><i class="ti ti-calendar-exclamation"></i></span>
         <span class="nav-link-title">Vencimientos</span>
     </a>
-</li>
+            </li>
+            
                     </ul>
                 </div>
             </div>
@@ -145,3 +146,5 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+
+ 

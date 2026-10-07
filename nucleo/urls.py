@@ -15,6 +15,9 @@ from .views.reportes.comparativa_view import ComparativaView
 from .views.LogoutView import LogoutView
 from django.contrib.auth import views as auth_views
 from .views.exportar_view import ExportarPedidoView, ExportarListaPedidosView
+from .views.prediccion_view import PrediccionView
+
+
 
 urlpatterns= [
     path("home", HomePage.as_view(), name="home"),
@@ -47,6 +50,7 @@ urlpatterns= [
     path('pedidos/<int:pk>/exportar/', ExportarPedidoView.as_view(), name='exportar_pedido'),
     path('pedidos/exportar/', ExportarListaPedidosView.as_view(), name='exportar_lista_pedidos'),
     path('vencimientos/', VencimientosView.as_view(), name='vencimientos'),
+    path('reportes/prediccion/', PrediccionView.as_view(), name='reportes_prediccion'),
     
 ]
 

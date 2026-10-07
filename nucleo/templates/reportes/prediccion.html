@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Predicción de demanda{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Predicción de demanda</h2>
+            <div class="text-muted mt-1">
+                Modelo Holt-Winters sobre {{ data.dias_historico }} días de histórico.
+            </div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <form method="get" class="d-flex gap-2">
+                <select name="dias" class="form-select" onchange="this.form.submit()">
+                    <option value="7" {% if dias_prediccion == 7 %}selected{% endif %}>7 días</option>
+                    <option value="14" {% if dias_prediccion == 14 %}selected{% endif %}>14 días</option>
+                    <option value="21" {% if dias_prediccion == 21 %}selected{% endif %}>21 días</option>
+                    <option value="30" {% if dias_prediccion == 30 %}selected{% endif %}>30 días</option>
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if not data.ok %}
+    <div class="alert alert-warning mt-3">
+        <i class="ti ti-alert-triangle me-1"></i>
+        {{ data.error }}
+    </div>
+{% else %}
+
+    <!-- KPIs -->
+    <div class="row row-deck row-cards mt-3">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">Tendencia</div>
+                    <div class="h2 mb-0">
+                        {% if data.tendencia == 'up' %}
+                            <span class="text-green">▲ Al alza</span>
+                        {% elif data.tendencia == 'down' %}
+                            <span class="text-red">▼ A la baja</span>
+                        {% else %}
+                            <span class="text-muted">— Estable</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">Confianza (R²)</div>
+                    <div class="h2 mb-0">{{ data.confianza|floatformat:2 }}</div>
+                    <div class="text-muted small">
+                        {% if data.confianza > 0.7 %}Alta
+                        {% elif data.confianza > 0.4 %}Media
+                        {% else %}Baja{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">Promedio histórico</div>
+                    <div class="h2 mb-0">${{ data.promedio_historico|floatformat:2 }}</div>
+                    <div class="text-muted small">por día</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="subheader">Promedio proyectado</div>
+                    <div class="h2 mb-0">${{ data.promedio_predicho|floatformat:2 }}</div>
+                    <div class="text-muted small">por día</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="card mt-3">
+        <div class="card-header">
+            <h3 class="card-title">Ventas históricas + proyección</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="chart-prediccion" height="80"></canvas>
+        </div>
+    </div>
+
+    <!-- Tabla de predicción -->
+    <div class="card mt-3">
+        <div class="card-header">
+            <h3 class="card-title">Proyección diaria ({{ dias_prediccion }} días)</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th class="text-end">Predicción USD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in data.prediccion %}
+                    <tr>
+                        <td>{{ p.fecha }}</td>
+                        <td class="text-end">${{ p.usd|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Cargar Chart.js y datos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {{ data.historico|json_script:"historico-data" }}
+    {{ data.prediccion|json_script:"prediccion-data" }}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const historico = JSON.parse(document.getElementById('historico-data').textContent);
+            const prediccion = JSON.parse(document.getElementById('prediccion-data').textContent);
+
+            const labels = [
+                ...historico.map(d => d.fecha),
+                ...prediccion.map(d => d.fecha),
+            ];
+            const historicoData = [
+                ...historico.map(d => d.usd),
+                ...prediccion.map(() => null),
+            ];
+            const prediccionData = [
+                ...historico.map(() => null),
+                ...prediccion.map(d => d.usd),
+            ];
+
+            new Chart(document.getElementById('chart-prediccion'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Histórico',
+                            data: historicoData,
+                            borderColor: '#206bc4',
+                            backgroundColor: 'rgba(32,107,196,0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 2,
+                        },
+                        {
+                            label: 'Proyección',
+                            data: prediccionData,
+                            borderColor: '#2fb344',
+                            backgroundColor: 'rgba(47,179,68,0.1)',
+                            borderDash: [6, 4],
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 3,
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': $' +
+                                        context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: { maxRotation: 45, minRotation: 45 }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+{% endif %}
+{% endblock %}
