@@ -141,15 +141,23 @@ class DetallePedido(models.Model):
         db_table = 'detalle_pedido'
 
 class Usuario(models.Model):
+    """Perfil del usuario: tienda a la que pertenece y rol que ocupa en ella."""
+
+    class Rol(models.TextChoices):
+        GERENTE = 'GERENTE', 'Gerente de tienda'
+        SUBGERENTE = 'SUBGERENTE', 'Subgerente'
+        SUPERVISOR = 'SUPERVISOR', 'Supervisor'
+        OPERADOR = 'OPERADOR', 'Operador integral'
+
     usuario= models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     tienda= models.ForeignKey('Tienda', on_delete=models.CASCADE, db_column='id_tienda')
-    rol = models.CharField(max_length=20)
+    rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.OPERADOR)
 
     class Meta:
         db_table = 'usuario'
     
     def __str__(self):
-        return self.usuario.username
+        return f"{self.usuario.username} ({self.get_rol_display()})"
 
 
 class Ventas(models.Model):
@@ -176,7 +184,7 @@ class Ventas(models.Model):
         ]
 
     def __str__(self):
-        return f"Factura N° {self.numero_factura} - {self.fecha} - {self.hora} - {self.codigo_productoç}"
+        return f"Factura N° {self.numero_factura} - {self.fecha} - {self.hora} - {self.codigo_producto_id}"
 
 
 
@@ -270,6 +278,33 @@ class AnalisisReposicion(models.Model):
     def es_critico(self):
         """¿El stock actual está por debajo del stock de seguridad?"""
         return float(self.inventario.stock_actual) <= float(self.stock_seguridad)
+
+    @property
+    def tiene_sobrestock(self):
+        """
+        ¿El stock actual supera el stock máximo calculado?
+        Solo aplica a productos con ventas (DDP > 0); los productos sin
+        ventas se reportan aparte como "sin movimiento".
+        """
+        return (
+            float(self.promedio_venta_diario) > 0
+            and float(self.inventario.stock_actual) > float(self.stock_maximo)
+        )
+
+    @property
+    def exceso_unidades(self):
+        """Unidades por encima del stock máximo (0 si no hay sobrestock)."""
+        if not self.tiene_sobrestock:
+            return 0
+        return int(round(float(self.inventario.stock_actual) - float(self.stock_maximo)))
+
+    @property
+    def dias_cobertura(self):
+        """Días que alcanza el stock actual al ritmo de venta promedio."""
+        ddp = float(self.promedio_venta_diario)
+        if ddp <= 0:
+            return None
+        return round(float(self.inventario.stock_actual) / ddp, 1)
 
     @property
     def cantidad_sugerida(self):

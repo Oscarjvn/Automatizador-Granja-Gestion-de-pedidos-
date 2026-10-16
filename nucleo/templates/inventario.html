@@ -49,6 +49,9 @@
                     <option value="reponer" {% if filtros.estado == 'reponer' %}selected{% endif %}>
                         🟡 A reponer
                     </option>
+                    <option value="sobrestock" {% if filtros.estado == 'sobrestock' %}selected{% endif %}>
+                        🔵 Sobrestock
+                    </option>
                     <option value="ok" {% if filtros.estado == 'ok' %}selected{% endif %}>
                         🟢 OK
                     </option>
@@ -121,6 +124,8 @@
                             <span class="badge bg-danger">🔴 Crítico</span>
                         {% elif item.necesita_reposicion %}
                             <span class="badge bg-warning text-dark">🟡 Reponer</span>
+                        {% elif item.tiene_sobrestock %}
+                            <span class="badge bg-azure text-white">🔵 Sobrestock</span>
                         {% elif item.ddp == 0 %}
                             <span class="badge bg-secondary">Sin demanda</span>
                         {% else %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Sobrestock{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Sobrestock</h2>
+            <div class="text-muted mt-1">
+                Productos cuyo stock actual supera el stock máximo calculado según su demanda.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3 border-azure">
+    <div class="card-header bg-azure text-white">
+        🔵 Productos con sobrestock ({{ items|length }}) · {{ total_exceso }} unidades en exceso
+    </div>
+    {% if items %}
+    <div class="table-responsive">
+        <table class="table table-vcenter">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Cuadrante</th>
+                    <th class="text-end">Stock actual</th>
+                    <th class="text-end">Stock máximo</th>
+                    <th class="text-end">Exceso</th>
+                    <th class="text-end">DDP</th>
+                    <th class="text-end">Días de cobertura</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.producto.sku }}</td>
+                    <td>{{ item.producto.nombre }}</td>
+                    <td>{{ item.producto.cuadrante|default:"—" }}</td>
+                    <td class="text-end">{{ item.stock_actual }}</td>
+                    <td class="text-end">{{ item.stock_maximo|floatformat:0 }}</td>
+                    <td class="text-end"><span class="badge bg-azure text-white">+{{ item.exceso }}</span></td>
+                    <td class="text-end">{{ item.ddp|floatformat:2 }}</td>
+                    <td class="text-end">{{ item.dias_cobertura|floatformat:1 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">No hay productos con sobrestock en esta tienda.</div>
+    {% endif %}
+</div>
+{% endblock %}

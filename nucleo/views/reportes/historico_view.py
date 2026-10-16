@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 from django.views.generic import TemplateView
 
-from nucleo.mixin import TiendaRequeridaMixin
+from nucleo.permisos import PermisoRequeridoMixin
 from nucleo.services.reportes.historico import (
     distribucion_dia_semana,
     distribucion_por_hora,
@@ -22,7 +22,9 @@ def _parse_fecha(s, default):
         return default
 
 
-class HistoricoView(TiendaRequeridaMixin, TemplateView):
+class HistoricoView(PermisoRequeridoMixin, TemplateView):
+    permiso_requerido = 'ver_reportes'
+
     template_name = 'reportes/historico.html'
 
     def get_context_data(self, **kwargs):

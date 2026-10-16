@@ -1,10 +1,12 @@
 from django.views.generic import TemplateView
 
-from nucleo.mixin import TiendaRequeridaMixin
+from nucleo.permisos import PermisoRequeridoMixin
 from nucleo.services.prediccion import predecir_ventas
 
 
-class PrediccionView(TiendaRequeridaMixin, TemplateView):
+class PrediccionView(PermisoRequeridoMixin, TemplateView):
+    permiso_requerido = 'ver_reportes'
+
     template_name = 'reportes/prediccion.html'
 
     def get_context_data(self, **kwargs):

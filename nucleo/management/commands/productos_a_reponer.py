@@ -28,6 +28,7 @@ class Command(BaseCommand):
             AnalisisReposicion.objects
             .select_related('inventario__producto', 'inventario__tienda')
             .filter(inventario__tienda=tienda)
+            .filter(promedio_venta_diario__gt=0)
             .filter(inventario__stock_actual__lte=F('reorder_point'))
         )
         items = list(qs)

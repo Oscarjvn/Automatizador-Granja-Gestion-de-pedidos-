@@ -57,9 +57,16 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="{% url 'sobrestock' %}">
+                                <span class="nav-link-icon"><i class="ti ti-packages"></i></span>
+                                <span class="nav-link-title">Sobrestock</span>
+                            </a>
+                        </li>
+                        {% if permisos.ver_reportes %}
+                        <li class="nav-item">
                             <a class="nav-link" href="{% url 'reportes_prediccion' %}">
                                 <span class="nav-link-icon"><i class="ti ti-calendar-exclamation"></i></span>
-                                <span class="nav-link-title">Prediccion</span>
+                                <span class="nav-link-title">Predicción</span>
                             </a>
                         </li>
                         <li class="nav-item dropdown">
@@ -74,6 +81,7 @@
         <a class="dropdown-item" href="{% url 'reportes_comparativa' %}">Comparativa</a>
     </div>
 </li>
+                        {% endif %}
                     <li class="nav-item">
     <a class="nav-link" href="{% url 'vencimientos' %}">
         <span class="nav-link-icon"><i class="ti ti-calendar-exclamation"></i></span>
@@ -98,14 +106,16 @@
                                     <div>{{ request.user.get_full_name|default:request.user.username }}</div>
                                     <div class="mt-1 small text-muted">
                                         {% if request.user.usuario %}
-                                            {{ request.user.usuario.tienda.nombre }}
+                                            {{ request.user.usuario.tienda.nombre }} · {{ request.user.usuario.get_rol_display }}
                                         {% endif %}
                                     </div>
                                 </div>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                {% if request.user.is_staff %}
                                 <a href="{% url 'admin:index' %}" class="dropdown-item">Admin</a>
                                 <div class="dropdown-divider"></div>
+                                {% endif %}
                                 <form action="{% url 'logout' %}" method="post" class="inline">
                                     {% csrf_token %}
                                     <!-- Opción B: Estilo de Enlace de texto plano -->

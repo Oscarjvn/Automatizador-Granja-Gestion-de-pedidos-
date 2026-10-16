@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.views import View
 from datetime import date, datetime, timedelta
 
-from nucleo.mixin import TiendaRequeridaMixin
+from nucleo.permisos import PermisoRequeridoMixin
 from nucleo.models import Pedido
 from nucleo.services.exportar.pedidos import (
     exportar_lista_pedidos,
@@ -20,8 +20,9 @@ def _respuesta_excel(buffer, nombre):
     return response
 
 
-class ExportarPedidoView(TiendaRequeridaMixin, View):
+class ExportarPedidoView(PermisoRequeridoMixin, View):
     """Descarga un pedido individual en Excel."""
+    permiso_requerido = 'exportar'
 
     def get(self, request, pk):
         pedido = get_object_or_404(
@@ -33,8 +34,9 @@ class ExportarPedidoView(TiendaRequeridaMixin, View):
         return _respuesta_excel(buffer, nombre)
 
 
-class ExportarListaPedidosView(TiendaRequeridaMixin, View):
+class ExportarListaPedidosView(PermisoRequeridoMixin, View):
     """Descarga la lista de pedidos filtrada en Excel."""
+    permiso_requerido = 'exportar'
 
     def get(self, request):
         qs = (

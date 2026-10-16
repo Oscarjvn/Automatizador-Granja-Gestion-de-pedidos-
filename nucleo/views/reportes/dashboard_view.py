@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from django.views.generic import TemplateView
 
-from nucleo.mixin import TiendaRequeridaMixin
+from nucleo.permisos import PermisoRequeridoMixin
 from nucleo.services.reportes.historico import kpis_periodo, serie_diaria, distribucion_dia_semana
 from nucleo.services.reportes.rotacion import (
     clasificacion_abc,
@@ -11,7 +11,9 @@ from nucleo.services.reportes.rotacion import (
 )
 
 
-class DashboardReportesView(TiendaRequeridaMixin, TemplateView):
+class DashboardReportesView(PermisoRequeridoMixin, TemplateView):
+    permiso_requerido = 'ver_reportes'
+
     template_name = 'reportes/dashboard.html'
 
     def get_context_data(self, **kwargs):

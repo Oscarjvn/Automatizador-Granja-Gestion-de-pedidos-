@@ -101,6 +101,7 @@ def productos_a_reponer(tienda=None):
     qs = (
         AnalisisReposicion.objects
         .select_related('inventario__producto', 'inventario__tienda')
+        .filter(promedio_venta_diario__gt=0)
         .filter(inventario__stock_actual__lte=F('reorder_point'))
     )
     if tienda:
@@ -122,10 +123,10 @@ def productos_a_reponer(tienda=None):
     return resultado
 
 
-def listar_cuadrantes():
+def listar_cuadrantes(tienda=None):
     """
     Devuelve lista de cuadrantes con su conteo de productos y cuántos
-    necesitan reposición.
+    necesitan reposición en la tienda indicada.
     """
     totales_catalogo = dict(
         Producto.objects
@@ -142,6 +143,7 @@ def listar_cuadrantes():
         .filter(inventario__stock_actual__lte=F('reorder_point'))
         .exclude(inventario__producto__cuadrante__isnull=True)
         .exclude(inventario__producto__cuadrante='')
+        .filter(**({'inventario__tienda': tienda} if tienda else {}))
         .values_list('inventario__producto__cuadrante')
         .annotate(n=Count('inventario'))
         .values_list('inventario__producto__cuadrante', 'n')
@@ -185,4 +187,35 @@ def productos_a_reponer_de_cuadrante(cuadrante, tienda=None):
         })
 
     resultado.sort(key=lambda x: (not x['es_critico'], -x['cantidad_sugerida']))
+    return resultado
+
+
+def productos_con_sobrestock(tienda=None):
+    """
+    Lista de inventarios cuyo stock actual supera el stock máximo calculado.
+
+    Solo considera productos con ventas (DDP > 0). Se ordena por exceso de
+    unidades, de mayor a menor.
+    """
+    qs = (
+        AnalisisReposicion.objects
+        .select_related('inventario__producto', 'inventario__tienda')
+        .filter(promedio_venta_diario__gt=0)
+        .filter(inventario__stock_actual__gt=F('stock_maximo'))
+    )
+    if tienda:
+        qs = qs.filter(inventario__tienda=tienda)
+
+    resultado = []
+    for a in qs:
+        resultado.append({
+            'inventario': a.inventario,
+            'producto': a.inventario.producto,
+            'stock_actual': a.inventario.stock_actual,
+            'stock_maximo': float(a.stock_maximo),
+            'exceso': a.exceso_unidades,
+            'dias_cobertura': a.dias_cobertura,
+            'ddp': float(a.promedio_venta_diario),
+        })
+    resultado.sort(key=lambda x: -x['exceso'])
     return resultado

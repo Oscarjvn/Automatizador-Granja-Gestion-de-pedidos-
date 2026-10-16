@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 from django.views.generic import TemplateView
 
-from nucleo.mixin import TiendaRequeridaMixin
+from nucleo.permisos import PermisoRequeridoMixin
 from nucleo.services.reportes.rotacion import (
     clasificacion_abc,
     productos_sin_movimiento,
@@ -20,7 +20,9 @@ def _parse_fecha(s, default):
         return default
 
 
-class RotacionView(TiendaRequeridaMixin, TemplateView):
+class RotacionView(PermisoRequeridoMixin, TemplateView):
+    permiso_requerido = 'ver_reportes'
+
     template_name = 'reportes/rotacion.html'
 
     def get_context_data(self, **kwargs):
