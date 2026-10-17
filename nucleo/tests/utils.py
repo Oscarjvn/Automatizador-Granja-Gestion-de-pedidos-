@@ -35,7 +35,7 @@ def crear_producto(sku=None, cuadrante='A1', lead_time=1, seguridad=1, ciclo=3, 
     )
 
 
-def crear_usuario(tienda, rol=Usuario.Rol.OPERADOR, username=None, password='Clave-Segura-2026'):
+def crear_usuario(tienda, rol=Usuario.Rol.SUPERVISOR, username=None, password='Clave-Segura-2026'):
     n = _siguiente()
     user = User.objects.create_user(username=username or f'usuario{n}', password=password)
     Usuario.objects.create(usuario=user, tienda=tienda, rol=rol)

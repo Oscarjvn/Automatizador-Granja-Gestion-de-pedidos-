@@ -147,11 +147,10 @@ class Usuario(models.Model):
         GERENTE = 'GERENTE', 'Gerente de tienda'
         SUBGERENTE = 'SUBGERENTE', 'Subgerente'
         SUPERVISOR = 'SUPERVISOR', 'Supervisor'
-        OPERADOR = 'OPERADOR', 'Operador integral'
 
     usuario= models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     tienda= models.ForeignKey('Tienda', on_delete=models.CASCADE, db_column='id_tienda')
-    rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.OPERADOR)
+    rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.SUPERVISOR)
 
     class Meta:
         db_table = 'usuario'

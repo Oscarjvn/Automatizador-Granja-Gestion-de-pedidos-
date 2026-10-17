@@ -22,13 +22,15 @@ class MatrizPermisosTests(TestCase):
                         'recibir_pedido', 'ver_reportes', 'exportar'},
             R.SUBGERENTE: {'generar_pedido', 'recibir_pedido', 'ver_reportes', 'exportar'},
             R.SUPERVISOR: {'generar_pedido', 'recibir_pedido'},
-            R.OPERADOR: {'recibir_pedido'},
         }
         for rol, permitidas in esperado.items():
             user = crear_usuario(self.tienda, rol)
             for accion in PERMISOS:
                 with self.subTest(rol=rol, accion=accion):
                     self.assertEqual(tiene_permiso(user, accion), accion in permitidas)
+
+    def test_solo_existen_tres_roles(self):
+        self.assertEqual(set(R.values), {'GERENTE', 'SUBGERENTE', 'SUPERVISOR'})
 
     def test_usuario_sin_perfil_no_tiene_permisos(self):
         from django.contrib.auth.models import User
@@ -46,14 +48,14 @@ class PermisosEnVistasTests(TestCase):
         self.tienda = crear_tienda()
         self.gerente = crear_usuario(self.tienda, R.GERENTE)
         self.supervisor = crear_usuario(self.tienda, R.SUPERVISOR)
-        self.operador = crear_usuario(self.tienda, R.OPERADOR)
+        self.subgerente = crear_usuario(self.tienda, R.SUBGERENTE)
         self.producto = crear_producto(sku='777')
         self.pedido = generar_pedido_sugerido(self.tienda, self.supervisor, [
             {'producto': self.producto, 'cant_sugerida': 4, 'cant_ajustada': None},
         ])
 
     def test_solo_el_gerente_aprueba(self):
-        for user in (self.supervisor, self.operador):
+        for user in (self.supervisor, self.subgerente):
             self.client.force_login(user)
             r = self.client.post(reverse('pedido_aprobar', args=[self.pedido.pk]))
             self.assertEqual(r.status_code, 403)
@@ -64,14 +66,19 @@ class PermisosEnVistasTests(TestCase):
         self.assertEqual(self.pedido.estatus, Pedido.Estado.APROBADO)
 
     def test_solo_el_gerente_cancela(self):
-        self.client.force_login(self.supervisor)
-        r = self.client.post(reverse('pedido_cancelar', args=[self.pedido.pk]))
-        self.assertEqual(r.status_code, 403)
+        for user in (self.supervisor, self.subgerente):
+            self.client.force_login(user)
+            r = self.client.post(reverse('pedido_cancelar', args=[self.pedido.pk]))
+            self.assertEqual(r.status_code, 403)
 
-    def test_operador_no_genera_pedidos(self):
-        self.client.force_login(self.operador)
-        r = self.client.post(reverse('reposicion'), {'ajustada_777': '5', 'sugerido_777': '5'})
-        self.assertEqual(r.status_code, 403)
+    def test_supervisor_recibe_pedidos(self):
+        from nucleo.services.pedidos import aprobar_pedido
+        aprobar_pedido(self.pedido)
+        self.client.force_login(self.supervisor)
+        r = self.client.post(reverse('pedido_recibir', args=[self.pedido.pk]))
+        self.assertEqual(r.status_code, 302)
+        self.pedido.refresh_from_db()
+        self.assertEqual(self.pedido.estatus, Pedido.Estado.RECIBIDO)
 
     def test_supervisor_genera_pedidos(self):
         self.client.force_login(self.supervisor)
@@ -86,8 +93,8 @@ class PermisosEnVistasTests(TestCase):
         self.client.force_login(self.gerente)
         self.assertEqual(self.client.get(reverse('reportes')).status_code, 200)
 
-    def test_operador_no_exporta(self):
-        self.client.force_login(self.operador)
+    def test_supervisor_no_exporta(self):
+        self.client.force_login(self.supervisor)
         r = self.client.get(reverse('exportar_pedido', args=[self.pedido.pk]))
         self.assertEqual(r.status_code, 403)
 
@@ -107,7 +114,7 @@ class PermisosEnVistasTests(TestCase):
 class AccesoYSobrestockVistasTests(TestCase):
     def setUp(self):
         self.tienda = crear_tienda()
-        self.operador = crear_usuario(self.tienda, R.OPERADOR)
+        self.supervisor = crear_usuario(self.tienda, R.SUPERVISOR)
 
     def test_sin_sesion_redirige_al_login(self):
         for nombre in ('home', 'pedidos', 'reposicion', 'inventario', 'sobrestock', 'vencimientos'):
@@ -119,7 +126,7 @@ class AccesoYSobrestockVistasTests(TestCase):
     def test_vista_sobrestock_lista_los_excesos(self):
         inv = crear_inventario(self.tienda, crear_producto(), stock=90)
         crear_analisis(inv, 10, 10, 20, 50)
-        self.client.force_login(self.operador)
+        self.client.force_login(self.supervisor)
         r = self.client.get(reverse('sobrestock'))
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['total_exceso'], 40)
@@ -127,7 +134,7 @@ class AccesoYSobrestockVistasTests(TestCase):
     def test_dashboard_muestra_total_de_sobrestock(self):
         inv = crear_inventario(self.tienda, crear_producto(), stock=90)
         crear_analisis(inv, 10, 10, 20, 50)
-        self.client.force_login(self.operador)
+        self.client.force_login(self.supervisor)
         r = self.client.get(reverse('home'))
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['total_sobrestock'], 1)

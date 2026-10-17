@@ -25,13 +25,14 @@ python manage.py lotes_por_vencer          # alerta de lotes por vencer
 
 ## Roles
 
-| Acción | Gerente | Subgerente | Supervisor | Operador |
-| --- | --- | --- | --- | --- |
-| Generar pedido sugerido | sí | sí | sí | no |
-| Aprobar o cancelar pedido | sí | no | no | no |
-| Recibir pedido y registrar lotes | sí | sí | sí | sí |
-| Reportes y predicción | sí | sí | no | no |
-| Exportar a Excel | sí | sí | no | no |
+| Acción | Gerente | Subgerente | Supervisor |
+| --- | --- | --- | --- |
+| Consultar dashboard, inventario y alertas | sí | sí | sí |
+| Generar pedido sugerido | sí | sí | sí |
+| Recibir pedido y registrar lotes | sí | sí | sí |
+| Reportes y predicción | sí | sí | no |
+| Exportar a Excel | sí | sí | no |
+| Aprobar o cancelar pedido | sí | no | no |
 
 El rol se asigna en el panel de administración, en el perfil de tienda del usuario.
 

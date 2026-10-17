@@ -8,13 +8,13 @@ no alcanza) y las plantillas lo usan, mediante el context processor
 
 Matriz de permisos:
 
-    Acción              Gerente  Subgerente  Supervisor  Operador
-    generar_pedido         sí        sí          sí         no
-    aprobar_pedido         sí        no          no         no
-    cancelar_pedido        sí        no          no         no
-    recibir_pedido         sí        sí          sí         sí
-    ver_reportes           sí        sí          no         no
-    exportar               sí        sí          no         no
+    Acción              Gerente  Subgerente  Supervisor
+    generar_pedido         sí        sí          sí
+    aprobar_pedido         sí        no          no
+    cancelar_pedido        sí        no          no
+    recibir_pedido         sí        sí          sí
+    ver_reportes           sí        sí          no
+    exportar               sí        sí          no
 
 Consultar el dashboard, el inventario, la reposición, el sobrestock y los
 vencimientos está permitido a todos los roles.
@@ -30,7 +30,7 @@ PERMISOS = {
     'generar_pedido': {R.GERENTE, R.SUBGERENTE, R.SUPERVISOR},
     'aprobar_pedido': {R.GERENTE},
     'cancelar_pedido': {R.GERENTE},
-    'recibir_pedido': {R.GERENTE, R.SUBGERENTE, R.SUPERVISOR, R.OPERADOR},
+    'recibir_pedido': {R.GERENTE, R.SUBGERENTE, R.SUPERVISOR},
     'ver_reportes': {R.GERENTE, R.SUBGERENTE},
     'exportar': {R.GERENTE, R.SUBGERENTE},
 }
