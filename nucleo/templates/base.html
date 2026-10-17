@@ -63,11 +63,15 @@
                             </a>
                         </li>
                         {% if permisos.ver_reportes %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'reportes_prediccion' %}">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#navbar-prediccion" data-bs-toggle="dropdown" data-bs-auto-close="true" role="button" aria-expanded="false">
                                 <span class="nav-link-icon"><i class="ti ti-calendar-exclamation"></i></span>
                                 <span class="nav-link-title">Predicción</span>
                             </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{% url 'reportes_prediccion' %}">Ventas totales de la tienda</a>
+                                <a class="dropdown-item" href="{% url 'reportes_prediccion_productos' %}">Top 20 productos</a>
+                            </div>
                         </li>
                         <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#navbar-reportes" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">

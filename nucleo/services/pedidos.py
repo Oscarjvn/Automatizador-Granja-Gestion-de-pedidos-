@@ -35,7 +35,25 @@ def generar_pedido_sugerido(tienda, usuario, items):
 
 
 @transaction.atomic
+def _bloquear(pedido):
+    """
+    Relee el pedido bloqueando su fila hasta que termine la transacción.
+    Si dos personas actúan sobre el mismo pedido a la vez, la segunda espera
+    y luego ve el estado ya actualizado, en lugar de repetir la operación.
+    """
+    # Bloquea la fila y actualiza el mismo objeto que recibió la función
+    Pedido.todos.select_for_update().filter(pk=pedido.pk).first()
+    pedido.refresh_from_db()
+    return pedido
+
+
+class RecepcionInvalida(EstadoInvalido):
+    """Los datos de recepción no son coherentes (ej. lotes que no cuadran)."""
+
+
+@transaction.atomic
 def aprobar_pedido(pedido):
+    pedido = _bloquear(pedido)
     if pedido.estatus != Pedido.Estado.PENDIENTE:
         raise EstadoInvalido(
             f"No se puede aprobar un pedido en estado {pedido.get_estatus_display()}."
@@ -48,6 +66,7 @@ def aprobar_pedido(pedido):
 
 @transaction.atomic
 def cancelar_pedido(pedido):
+    pedido = _bloquear(pedido)
     if pedido.estatus == Pedido.Estado.RECIBIDO:
         raise EstadoInvalido("No se puede cancelar un pedido ya recibido.")
     if pedido.estatus == Pedido.Estado.CANCELADO:
@@ -74,6 +93,7 @@ def recibir_pedido(pedido, cantidades_recibidas, lotes_por_detalle):
         ]
     }
     """
+    pedido = _bloquear(pedido)
     if pedido.estatus != Pedido.Estado.APROBADO:
         raise EstadoInvalido(
             f"Solo se pueden recibir pedidos APROBADOS. "
@@ -90,10 +110,23 @@ def recibir_pedido(pedido, cantidades_recibidas, lotes_por_detalle):
         if cantidad < 0:
             cantidad = 0
 
+        lotes_validos = [
+            l for l in lotes_por_detalle.get(detalle.pk, [])
+            if l.get('fecha_vencimiento') and l.get('cantidad', 0) > 0
+        ]
+        suma_lotes = sum(l['cantidad'] for l in lotes_validos)
+        if lotes_validos and suma_lotes != cantidad:
+            # La transacción se revierte: no queda nada a medio guardar
+            raise RecepcionInvalida(
+                f"{detalle.producto.nombre}: los lotes suman {suma_lotes} "
+                f"unidades, pero la cantidad recibida es {cantidad}. "
+                f"Corrija las cantidades y vuelva a intentarlo."
+            )
+
         detalle.cant_recibida = cantidad
         detalle.save(update_fields=['cant_recibida'])
 
-        for idx, lote_data in enumerate(lotes_por_detalle.get(detalle.pk, []), start=1):
+        for idx, lote_data in enumerate(lotes_validos, start=1):
             cant_lote = lote_data.get('cantidad', 0)
             fecha_venc = lote_data.get('fecha_vencimiento')
 

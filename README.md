@@ -21,6 +21,7 @@ python manage.py recalcular_reposicion     # recalcula DDP, ROP y stock máximo
 python manage.py productos_a_reponer       # alerta de productos bajo el ROP
 python manage.py productos_sobrestock      # alerta de productos sobre el stock máximo
 python manage.py lotes_por_vencer          # alerta de lotes por vencer
+python manage.py predecir_top_productos    # pronóstico del top 20 de productos por tienda
 ```
 
 ## Roles
@@ -35,6 +36,7 @@ python manage.py lotes_por_vencer          # alerta de lotes por vencer
 | Aprobar o cancelar pedido | sí | no | no |
 
 El rol se asigna en el panel de administración, en el perfil de tienda del usuario.
+No hay registro público: las cuentas solo se crean desde el panel de administración.
 
 ## Pruebas
 

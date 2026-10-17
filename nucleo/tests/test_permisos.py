@@ -138,3 +138,8 @@ class AccesoYSobrestockVistasTests(TestCase):
         r = self.client.get(reverse('home'))
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['total_sobrestock'], 1)
+
+    def test_registro_publico_eliminado(self):
+        self.assertEqual(self.client.get('/accounts/singup/').status_code, 404)
+        r = self.client.get(reverse('login'))
+        self.assertNotContains(r, 'Sign Up')

@@ -29,13 +29,40 @@ def cargar_ventas(ventas_limpias, tienda, dry_run=False):
     """
     Carga una lista de ventas limpias en la BD.
 
+    Una venta se considera duplicada si ya existía en la base de datos ANTES
+    de esta carga con la misma tienda, número de factura, producto y fecha.
+    Así, volver a sincronizar un día no duplica datos, y dos líneas del mismo
+    producto dentro de una factura (que el POS envía por separado) se guardan
+    ambas. La misma factura en dos tiendas distintas tampoco se confunde.
+
     Retorna: dict con resumen {creadas, duplicadas, errores, detalles_errores}
     """
     creadas = 0
     duplicadas = 0
     errores = 0
-    detalles = [] 
+    detalles = []
 
+    # Productos de la carga en una sola consulta
+    skus = {
+        normalizar_sku(r.get('producto.codigo_producto', ''))
+        for r in ventas_limpias
+    }
+    productos = {p.sku: p for p in Producto.objects.filter(sku__in=skus)}
+
+    # Ventas que ya existían en la tienda para las fechas de esta carga
+    fechas = set()
+    for r in ventas_limpias:
+        try:
+            fechas.add(_parse_fecha(r['fecha']))
+        except (KeyError, ValueError, AttributeError):
+            pass
+    existentes = set(
+        Ventas.todos
+        .filter(tienda=tienda, fecha__in=fechas)
+        .values_list('numero_factura', 'codigo_producto_id', 'fecha')
+    )
+
+    nuevas = []
     for idx, row in enumerate(ventas_limpias):
         try:
             numero_factura = row['numero_factura']
@@ -45,28 +72,17 @@ def cargar_ventas(ventas_limpias, tienda, dry_run=False):
             cantidad = int(row['cantidad.cantidad_vendida'])
             precio = Decimal(str(row['financiero.precio_unitario_usd']))
 
-            try:
-                producto = Producto.objects.get(sku=sku_norm)
-            except Producto.DoesNotExist:
+            producto = productos.get(sku_norm)
+            if producto is None:
                 errores += 1
                 detalles.append(f"[{idx}] Producto sku={sku_norm} no existe")
                 continue
 
-            if dry_run:
-                creadas += 1
-                continue
-
-            existe = Ventas.todos.filter(
-                numero_factura=numero_factura,
-                codigo_producto=producto,
-                fecha=fecha,
-            ).exists()
-
-            if existe:
+            if (numero_factura, producto.sku, fecha) in existentes:
                 duplicadas += 1
                 continue
 
-            Ventas.todos.create(
+            nuevas.append(Ventas(
                 numero_factura=numero_factura,
                 fecha=fecha,
                 hora=hora,
@@ -74,7 +90,7 @@ def cargar_ventas(ventas_limpias, tienda, dry_run=False):
                 cantidad_vendida=cantidad,
                 precio_usd=precio,
                 tienda=tienda,
-            )
+            ))
             creadas += 1
 
         except (KeyError, ValueError, InvalidOperation) as e:
@@ -83,6 +99,10 @@ def cargar_ventas(ventas_limpias, tienda, dry_run=False):
         except Exception as e:
             errores += 1
             detalles.append(f"[{idx}] Error inesperado: {e}")
+
+    if nuevas and not dry_run:
+        with transaction.atomic():
+            Ventas.todos.bulk_create(nuevas, batch_size=1000)
 
     return {
         'creadas': creadas,

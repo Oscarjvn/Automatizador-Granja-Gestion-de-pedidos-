@@ -5,7 +5,7 @@ from django.test import TestCase
 
 from nucleo.models import Lote, Pedido, Usuario
 from nucleo.services.pedidos import (
-    EstadoInvalido, aprobar_pedido, cancelar_pedido, generar_pedido_sugerido, recibir_pedido,
+    EstadoInvalido, RecepcionInvalida, aprobar_pedido, cancelar_pedido, generar_pedido_sugerido, recibir_pedido,
 )
 from nucleo.tests.utils import crear_producto, crear_tienda, crear_usuario
 
@@ -93,3 +93,23 @@ class CicloPedidoTests(TestCase):
         cancelar_pedido(self.pedido)
         with self.assertRaises(EstadoInvalido):
             cancelar_pedido(self.pedido)
+
+    def test_lotes_que_no_cuadran_se_rechazan_sin_guardar_nada(self):
+        aprobar_pedido(self.pedido)
+        d1 = self.pedido.detalles.order_by('pk').first()
+        with self.assertRaises(RecepcionInvalida):
+            recibir_pedido(self.pedido, {d1.pk: 9}, {d1.pk: [
+                {'cantidad': 5, 'fecha_vencimiento': date(2026, 12, 1)},
+            ]})
+        self.pedido.refresh_from_db()
+        d1.refresh_from_db()
+        self.assertEqual(self.pedido.estatus, Pedido.Estado.APROBADO)
+        self.assertIsNone(d1.cant_recibida)
+        self.assertEqual(Lote.todos.count(), 0)
+
+    def test_sin_lotes_se_acepta_cualquier_cantidad(self):
+        aprobar_pedido(self.pedido)
+        d1 = self.pedido.detalles.order_by('pk').first()
+        recibir_pedido(self.pedido, {d1.pk: 7}, {})
+        self.pedido.refresh_from_db()
+        self.assertEqual(self.pedido.estatus, Pedido.Estado.RECIBIDO)

@@ -65,3 +65,25 @@ class CargaTests(TestCase):
         r = cargar_ventas(self.limpias, self.tienda, dry_run=True)
         self.assertEqual(r['creadas'], 1)
         self.assertEqual(Ventas.todos.count(), 0)
+
+
+class DuplicadosPorTiendaTests(TestCase):
+    def setUp(self):
+        self.a = crear_tienda('A')
+        self.b = crear_tienda('B')
+        crear_producto(sku='5357')
+
+    def test_misma_factura_en_dos_tiendas_se_guarda_en_ambas(self):
+        limpias = limpiar_ventas({'ventas': [venta_cruda()]})
+        self.assertEqual(cargar_ventas(limpias, self.a)['creadas'], 1)
+        self.assertEqual(cargar_ventas(limpias, self.b)['creadas'], 1)
+        self.assertEqual(Ventas.todos.count(), 2)
+
+    def test_dos_lineas_del_mismo_producto_en_una_factura(self):
+        limpias = limpiar_ventas({'ventas': [venta_cruda(cantidad=2), venta_cruda(cantidad=3)]})
+        r = cargar_ventas(limpias, self.a)
+        self.assertEqual(r['creadas'], 2)
+        # Re-sincronizar el mismo día no duplica ninguna de las dos
+        r2 = cargar_ventas(limpias, self.a)
+        self.assertEqual(r2['duplicadas'], 2)
+        self.assertEqual(sum(Ventas.todos.values_list('cantidad_vendida', flat=True)), 5)

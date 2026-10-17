@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Predicción · Top 20 productos{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">Predicción de ventas · Top 20 productos</h2>
+            <div class="text-muted mt-1">
+                Holt-Winters por producto sobre {{ data.dias_historico }} días de historial
+                {% if data.fecha_corte %}(datos hasta el {{ data.fecha_corte|date:"d/m/Y" }}){% endif %}.
+            </div>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <form method="get" class="d-flex gap-2">
+                <select name="dias" class="form-select" onchange="this.form.submit()">
+                    <option value="7" {% if dias_prediccion == 7 %}selected{% endif %}>7 días</option>
+                    <option value="14" {% if dias_prediccion == 14 %}selected{% endif %}>14 días</option>
+                    <option value="21" {% if dias_prediccion == 21 %}selected{% endif %}>21 días</option>
+                    <option value="30" {% if dias_prediccion == 30 %}selected{% endif %}>30 días</option>
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if not data.ok %}
+    <div class="alert alert-warning mt-3">
+        <i class="ti ti-alert-triangle me-1"></i> {{ data.error }}
+    </div>
+{% else %}
+
+<div class="row row-deck row-cards mt-3">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card"><div class="card-body">
+            <div class="subheader">Productos analizados</div>
+            <div class="h1 mb-0">{{ data.items|length }}</div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card"><div class="card-body">
+            <div class="subheader">Unidades proyectadas ({{ dias_prediccion }} días)</div>
+            <div class="h1 mb-0">{{ data.total_unidades_pronostico|floatformat:0 }}</div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card"><div class="card-body">
+            <div class="subheader">En riesgo de quiebre (7 días)</div>
+            <div class="h1 mb-0 {% if data.productos_en_riesgo %}text-red{% endif %}">{{ data.productos_en_riesgo }}</div>
+            <div class="text-muted small">el stock no cubre lo proyectado</div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card"><div class="card-body">
+            <div class="subheader">Precisión media del modelo</div>
+            <div class="h1 mb-0">
+                {% if data.precision_media is not None %}{% widthratio data.precision_media 1 100 %}%{% else %}—{% endif %}
+            </div>
+            <div class="text-muted small">validación sobre los últimos 7 días</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header d-flex align-items-center gap-2">
+        <h3 class="card-title mb-0">Historial y proyección por producto</h3>
+        <select id="selector-producto" class="form-select ms-auto" style="max-width: 360px">
+            {% for i in data.items %}
+                <option value="{{ forloop.counter0 }}">{{ i.posicion }}. {{ i.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="card-body">
+        <canvas id="chart-producto" height="80"></canvas>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Producto</th>
+                    <th class="text-end">Vendido (90 d)</th>
+                    <th class="text-end">Prom./día actual</th>
+                    <th class="text-end">Proyección 7 d</th>
+                    <th class="text-end">Proyección {{ dias_prediccion }} d</th>
+                    <th class="text-end">Tendencia</th>
+                    <th class="text-end">Stock</th>
+                    <th class="text-end">Cobertura</th>
+                    <th>Modelo</th>
+                    <th class="text-end">Precisión</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in data.items %}
+                <tr class="fila-producto" data-indice="{{ forloop.counter0 }}" style="cursor: pointer">
+                    <td>{{ i.posicion }}</td>
+                    <td>
+                        <div>{{ i.nombre }}</div>
+                        <div class="text-muted small">SKU {{ i.sku }}{% if i.cuadrante %} · {{ i.cuadrante }}{% endif %}</div>
+                    </td>
+                    <td class="text-end">{{ i.unidades_periodo }}</td>
+                    <td class="text-end">{{ i.promedio_historico|floatformat:1 }}</td>
+                    <td class="text-end">{{ i.total_7_dias|floatformat:0 }}</td>
+                    <td class="text-end">{{ i.total_horizonte|floatformat:0 }}</td>
+                    <td class="text-end">
+                        {% if i.tendencia == 'up' %}<span class="text-green">▲ {{ i.variacion_pct|floatformat:0 }}%</span>
+                        {% elif i.tendencia == 'down' %}<span class="text-red">▼ {{ i.variacion_pct|floatformat:0 }}%</span>
+                        {% else %}<span class="text-muted">— estable</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if i.stock_actual is not None %}{{ i.stock_actual }}{% else %}<span class="text-muted">—</span>{% endif %}
+                        {% if i.riesgo_quiebre %}<span class="badge bg-red text-white ms-1">Quiebre</span>{% endif %}
+                    </td>
+                    <td class="text-end">{% if i.dias_cobertura is not None %}{{ i.dias_cobertura|floatformat:1 }} d{% else %}—{% endif %}</td>
+                    <td><span class="badge bg-secondary-lt">{{ i.metodo }}</span></td>
+                    <td class="text-end">{% if i.precision is not None %}{% widthratio i.precision 1 100 %}%{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer text-muted small">
+        Haga clic en un producto para ver su gráfico. «Quiebre» indica que el stock actual no cubre las ventas proyectadas para los próximos 7 días.
+        La precisión compara lo que el modelo habría pronosticado para los últimos 7 días con lo que realmente se vendió.
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{{ series|json_script:"series-data" }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const series = JSON.parse(document.getElementById('series-data').textContent);
+    const selector = document.getElementById('selector-producto');
+    let grafico = null;
+
+    function dibujar(indice) {
+        const s = series[indice];
+        if (!s) return;
+        const labels = [...s.historico.map(d => d.fecha), ...s.pronostico.map(d => d.fecha)];
+        const hist = [...s.historico.map(d => d.unidades), ...s.pronostico.map(() => null)];
+        const pred = [...s.historico.map(() => null), ...s.pronostico.map(d => d.unidades)];
+        if (s.historico.length) {
+            pred[s.historico.length - 1] = s.historico[s.historico.length - 1].unidades;
+        }
+        if (grafico) grafico.destroy();
+        grafico = new Chart(document.getElementById('chart-producto'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Vendido (últimos 28 días)', data: hist, borderColor: '#206bc4',
+                      backgroundColor: 'rgba(32,107,196,0.1)', fill: true, tension: 0.3, pointRadius: 2 },
+                    { label: 'Proyección', data: pred, borderColor: '#2fb344',
+                      backgroundColor: 'rgba(47,179,68,0.1)', borderDash: [6, 4], fill: true, tension: 0.3, pointRadius: 2 },
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: s.nombre + ' (SKU ' + s.sku + ')' },
+                    tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y.toFixed(1) + ' u.' } }
+                },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Unidades por día' } },
+                          x: { ticks: { maxRotation: 45, minRotation: 45 } } }
+            }
+        });
+    }
+
+    selector.addEventListener('change', e => dibujar(parseInt(e.target.value, 10)));
+    document.querySelectorAll('.fila-producto').forEach(fila => {
+        fila.addEventListener('click', () => {
+            selector.value = fila.dataset.indice;
+            dibujar(parseInt(fila.dataset.indice, 10));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+    dibujar(0);
+});
+</script>
+{% endif %}
+{% endblock %}
