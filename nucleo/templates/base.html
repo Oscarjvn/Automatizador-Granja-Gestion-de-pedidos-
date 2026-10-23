@@ -6,11 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Granja - Gestión{% endblock %}</title>
 
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/marca/favicon.svg' %}">
+    <!-- Tipografía: Nunito, de terminaciones redondeadas como el logo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
     <!-- Tabler CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css">
     <!-- Tabler Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 
+    <!-- Tema Granja: siempre después de Tabler para poder sobrescribirlo -->
+    <link rel="stylesheet" href="{% static 'css/granja.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body class="layout-fluid">
@@ -21,8 +28,7 @@
                 <!-- Logo + nombre -->
                 <h1 class="navbar-brand navbar-brand-autodark">
                     <a href="{% url 'home' %}" class="d-flex align-items-center text-decoration-none">
-                        <img src="{% static 'img/photo.jpg' %}" alt="Logo" width="32" height="32" class="me-2">
-                        <span class="fs-3 fw-bold">Granja</span>
+                        <img src="{% static 'img/marca/logo-granja-oscuro.svg' %}" alt="Granja Mercados" class="granja-logo">
                     </a>
                 </h1>
 
@@ -122,10 +128,9 @@
                                 {% endif %}
                                 <form action="{% url 'logout' %}" method="post" class="inline">
                                     {% csrf_token %}
-                                    <!-- Opción B: Estilo de Enlace de texto plano -->
-                                        <button type="submit" class="text-gray-600 hover:text-red-600 font-normal transition duration-150 background-transparent border-none p-0 cursor-pointer">
-                                                             Cerrar sesión
-                                        </button>
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="ti ti-logout me-2"></i>Cerrar sesión
+                                    </button>
                                 </form>
 
                             </div>
@@ -158,6 +163,23 @@
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
 
     {% block extra_js %}{% endblock %}
+    <script>
+    // Resalta en el menú lateral la sección en la que está el usuario
+    document.addEventListener('DOMContentLoaded', function () {
+        const ruta = window.location.pathname;
+        let mejor = null;
+        document.querySelectorAll('.navbar-vertical .navbar-nav a[href]').forEach(function (a) {
+            const href = a.getAttribute('href');
+            if (!href || href === '#' || href.startsWith('#')) return;
+            const coincide = href === '/' ? ruta === '/' : ruta.startsWith(href);
+            if (coincide && (!mejor || href.length > mejor.getAttribute('href').length)) mejor = a;
+        });
+        if (!mejor) return;
+        mejor.classList.add('active');
+        const grupo = mejor.closest('.nav-item');
+        if (grupo) grupo.classList.add('active');
+    });
+    </script>
 </body>
 </html>
 

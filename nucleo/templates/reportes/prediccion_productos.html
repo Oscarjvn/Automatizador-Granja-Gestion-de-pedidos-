@@ -106,12 +106,12 @@
                     <td class="text-end">{{ i.promedio_historico|floatformat:1 }}</td>
                     <td class="text-end">{{ i.total_7_dias|floatformat:0 }}</td>
                     <td class="text-end">{{ i.total_horizonte|floatformat:0 }}</td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
                         {% if i.tendencia == 'up' %}<span class="text-green">▲ {{ i.variacion_pct|floatformat:0 }}%</span>
                         {% elif i.tendencia == 'down' %}<span class="text-red">▼ {{ i.variacion_pct|floatformat:0 }}%</span>
                         {% else %}<span class="text-muted">— estable</span>{% endif %}
                     </td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
                         {% if i.stock_actual is not None %}{{ i.stock_actual }}{% else %}<span class="text-muted">—</span>{% endif %}
                         {% if i.riesgo_quiebre %}<span class="badge bg-red text-white ms-1">Quiebre</span>{% endif %}
                     </td>

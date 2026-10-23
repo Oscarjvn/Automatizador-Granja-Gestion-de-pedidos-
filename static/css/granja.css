@@ -1,0 +1,245 @@
+/* ==========================================================================
+   Tema Granja Mercados sobre Tabler
+   Colores tomados del logo y del portal corporativo.
+   ========================================================================== */
+
+:root {
+    /* Marca */
+    --granja-berenjena: #1A1423;
+    --granja-noche: #0D0A11;
+    --granja-amarillo: #FAB803;
+    --granja-amarillo-hover: #E5A800;
+    --granja-verde: #94C139;
+    --granja-verde-texto: #5E8C1A;   /* verde con contraste suficiente sobre blanco */
+    --granja-rojo: #E31E24;
+    --granja-azul: #2B4FA8;
+    --granja-magenta: #E6267A;
+    --granja-lienzo: #F5F4F7;
+    --granja-linea: #E6E2EC;
+
+    /* Tabler: tipografía, fondo y acento principal */
+    --tblr-font-sans-serif: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --tblr-body-bg: var(--granja-lienzo);
+    --tblr-body-color: var(--granja-berenjena);
+    --tblr-border-color: var(--granja-linea);
+    --tblr-primary: var(--granja-amarillo);
+    --tblr-primary-rgb: 250, 184, 3;
+    --tblr-primary-fg: var(--granja-berenjena);
+
+    /* Tabler: colores de estado tomados del rombo del logo */
+    --tblr-green: var(--granja-verde-texto);
+    --tblr-green-rgb: 94, 140, 26;
+    --tblr-red: var(--granja-rojo);
+    --tblr-red-rgb: 227, 30, 36;
+    --tblr-azure: var(--granja-azul);
+    --tblr-azure-rgb: 43, 79, 168;
+    --tblr-blue: var(--granja-azul);
+    --tblr-blue-rgb: 43, 79, 168;
+    --tblr-yellow: var(--granja-amarillo);
+    --tblr-yellow-rgb: 250, 184, 3;
+}
+
+body {
+    font-family: var(--tblr-font-sans-serif);
+    background: var(--granja-lienzo);
+    color: var(--granja-berenjena);
+}
+
+/* ---------- Barra lateral ---------- */
+.navbar-vertical {
+    background: var(--granja-berenjena) !important;
+    border-right: 0;
+}
+.navbar-vertical .navbar-brand {
+    padding: 1.25rem 0 .75rem;
+}
+.granja-logo {
+    display: block;
+    height: 58px;
+    width: auto;
+}
+.navbar-vertical .nav-link {
+    color: rgba(255, 255, 255, .72);
+    font-weight: 600;
+    border-left: 3px solid transparent;
+    border-radius: 0 8px 8px 0;
+    margin-right: .5rem;
+}
+.navbar-vertical .nav-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, .06);
+}
+.navbar.navbar-vertical .navbar-nav .nav-link.active,
+.navbar.navbar-vertical .navbar-nav .nav-item.active > .nav-link {
+    color: var(--granja-amarillo);
+    border-left-color: var(--granja-amarillo);
+    background: rgba(250, 184, 3, .08);
+}
+.navbar.navbar-vertical .navbar-nav .nav-link.active .nav-link-icon,
+.navbar.navbar-vertical .navbar-nav .nav-item.active > .nav-link .nav-link-icon {
+    color: var(--granja-amarillo);
+}
+.navbar-vertical .dropdown-menu {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+.navbar-vertical .dropdown-item {
+    color: rgba(255, 255, 255, .65);
+    padding-left: 3.25rem;
+}
+.navbar-vertical .dropdown-item:hover,
+.navbar-vertical .dropdown-item:focus {
+    color: #fff;
+    background: rgba(255, 255, 255, .06);
+}
+.navbar.navbar-vertical .dropdown-menu .dropdown-item.active {
+    color: var(--granja-amarillo);
+    background: transparent;
+}
+
+/* ---------- Barra superior con la franja de colores del rombo ---------- */
+.page-wrapper > header.navbar {
+    position: relative;
+    background: #fff;
+    border-bottom: 0;
+}
+.page-wrapper > header.navbar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+        var(--granja-rojo) 0 25%,
+        var(--granja-azul) 25% 50%,
+        var(--granja-amarillo) 50% 75%,
+        var(--granja-magenta) 75% 100%);
+}
+
+/* ---------- Títulos y tarjetas ---------- */
+.page-title,
+h1, h2, h3,
+.h1, .h2, .h3 {
+    color: var(--granja-berenjena);
+    font-weight: 800;
+    letter-spacing: -.01em;
+}
+.card {
+    border: 1px solid var(--granja-linea);
+    border-radius: 12px;
+    box-shadow: none;
+}
+.card-header {
+    border-bottom-color: var(--granja-linea);
+}
+.subheader {
+    color: #6B6475;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: .85rem;
+}
+
+/* ---------- Tablas: cifras alineadas y encabezados sin mayúsculas forzadas ---------- */
+.table {
+    font-variant-numeric: tabular-nums;
+}
+.table thead th {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: .8rem;
+    font-weight: 700;
+    color: #6B6475;
+    background: #FAF9FB;
+}
+
+/* ---------- Botones ---------- */
+.btn-primary {
+    --tblr-btn-bg: var(--granja-amarillo);
+    --tblr-btn-border-color: var(--granja-amarillo);
+    --tblr-btn-hover-bg: var(--granja-amarillo-hover);
+    --tblr-btn-hover-border-color: var(--granja-amarillo-hover);
+    --tblr-btn-active-bg: var(--granja-amarillo-hover);
+    --tblr-btn-color: var(--granja-berenjena);
+    --tblr-btn-hover-color: var(--granja-berenjena);
+    --tblr-btn-active-color: var(--granja-berenjena);
+    background-color: var(--granja-amarillo);
+    border-color: var(--granja-amarillo);
+    color: var(--granja-berenjena);
+    font-weight: 700;
+}
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--granja-amarillo-hover);
+    border-color: var(--granja-amarillo-hover);
+    color: var(--granja-berenjena);
+}
+
+/* Botón secundario: borde amarillo, texto oscuro legible */
+.btn-outline-primary {
+    --tblr-btn-color: var(--granja-berenjena);
+    --tblr-btn-border-color: var(--granja-amarillo);
+    --tblr-btn-hover-bg: var(--granja-amarillo);
+    --tblr-btn-hover-color: var(--granja-berenjena);
+    --tblr-btn-hover-border-color: var(--granja-amarillo);
+    color: var(--granja-berenjena);
+    border-color: var(--granja-amarillo);
+    font-weight: 700;
+}
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: var(--granja-amarillo);
+    color: var(--granja-berenjena);
+}
+
+/* Foco visible y accesible con el amarillo de la marca */
+.btn:focus-visible,
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--granja-amarillo);
+    box-shadow: 0 0 0 .2rem rgba(250, 184, 3, .35);
+    outline: none;
+}
+
+/* ---------- Pantallas públicas: login y recuperación de contraseña ---------- */
+.granja-publico {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: var(--granja-berenjena);
+}
+.granja-publico .granja-logo {
+    height: 112px;
+    margin: 0 auto 1.75rem;
+}
+.granja-publico-tarjeta {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 2rem 1.75rem;
+}
+.granja-publico-tarjeta .card {
+    border: 0;
+}
+.granja-publico-pie {
+    margin-top: 1.5rem;
+    color: rgba(255, 255, 255, .55);
+    font-size: .85rem;
+}
+.granja-publico a:not(.btn) {
+    color: var(--granja-azul);
+    font-weight: 600;
+}
+.granja-publico-pie a:not(.btn) {
+    color: var(--granja-amarillo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+}
