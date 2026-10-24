@@ -1,8 +1,19 @@
 """
-Cliente de la API de inventario del CEDI.
+Inventario del CEDI: un adaptador con varias fuentes intercambiables.
 
-El inventario del CEDI vive en su propio sistema; esta aplicación solo lo
-consulta, nunca guarda una copia. Así no hay dos números que se contradigan.
+La lógica de despacho solo conoce `consultar_stock_cedi` y `registrar_salida_cedi`.
+De dónde salen los datos se decide por configuración (CEDI_INVENTARIO_FUENTE):
+
+    api       La API oficial del CEDI. Su sistema es el dueño del inventario:
+              esta aplicación solo consulta y nunca descuenta stock.
+    local     La tabla inventario_cedi, con datos de prueba. Sirve para demostrar
+              el flujo sin acceso a la API, y aquí sí se descuenta cada despacho,
+              como lo haría el sistema real.
+    simulado  Existencias inventadas al vuelo, sin base de datos.
+
+Cambiar de fuente no requiere tocar el código.
+
+Contrato de la API:
 
 Contrato esperado (ajustar `_interpretar_respuesta` si la API real difiere):
 
@@ -22,8 +33,12 @@ import logging
 
 import requests
 from django.conf import settings
+from django.db.models import F
 
+from nucleo.models import InventarioCedi
 from nucleo.services.ventas.carga import normalizar_sku
+
+FUENTES = ('api', 'local', 'simulado')
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +91,49 @@ def _stock_simulado(skus):
     }
 
 
+def fuente_actual():
+    if getattr(settings, 'CEDI_INVENTARIO_SIMULADO', False):
+        return 'simulado'
+    fuente = getattr(settings, 'CEDI_INVENTARIO_FUENTE', 'api')
+    if fuente not in FUENTES:
+        raise InventarioCediNoDisponible(f'Fuente de inventario del CEDI desconocida: {fuente}.')
+    return fuente
+
+
+def _stock_local(skus):
+    filas = (InventarioCedi.objects
+             .filter(producto__sku__in=skus)
+             .values_list('producto__sku', 'disponible'))
+    return {normalizar_sku(sku): disponible for sku, disponible in filas}
+
+
+def registrar_salida_cedi(pedido):
+    """
+    Descuenta del inventario LOCAL lo que el pedido despachó.
+    Con la fuente api o simulado no hace nada: ahí el inventario no es nuestro.
+
+    Cada resta es una actualización condicional ("resta solo si alcanza"),
+    hecha por la base de datos en una sola instrucción: dos despachos al mismo
+    tiempo no pueden dejar el stock en negativo ni pisarse. Debe llamarse dentro
+    de la misma transacción que el despacho, para que si una línea falla se
+    deshaga todo.
+    """
+    if fuente_actual() != 'local':
+        return
+    from nucleo.services.pedidos import DespachoInvalido
+    for d in pedido.detalles.select_related('producto'):
+        if not d.cant_despachada:
+            continue
+        filas = (InventarioCedi.objects
+                 .filter(producto=d.producto, disponible__gte=d.cant_despachada)
+                 .update(disponible=F('disponible') - d.cant_despachada))
+        if filas == 0:
+            raise DespachoInvalido(
+                f"{d.producto.nombre}: el stock del CEDI cambió mientras preparabas el despacho. "
+                f"Vuelve a abrir el pedido para ver las existencias actuales."
+            )
+
+
 def consultar_stock_cedi(skus):
     """
     Existencias disponibles en el CEDI para los SKU indicados, en una sola llamada.
@@ -87,8 +145,11 @@ def consultar_stock_cedi(skus):
     skus = sorted({normalizar_sku(str(s)) for s in skus})
     if not skus:
         return {}
-    if getattr(settings, 'CEDI_INVENTARIO_SIMULADO', False):
+    fuente = fuente_actual()
+    if fuente == 'simulado':
         return _stock_simulado(skus)
+    if fuente == 'local':
+        return _stock_local(skus)
 
     url = getattr(settings, 'CEDI_INVENTARIO_URL', '')
     if not url:

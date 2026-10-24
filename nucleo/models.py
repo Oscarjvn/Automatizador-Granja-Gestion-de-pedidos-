@@ -365,3 +365,24 @@ class AnalisisReposicion(models.Model):
             return 0
         faltante = float(self.stock_maximo) - float(self.inventario.stock_actual)
         return max(int(round(faltante)), 0)
+
+
+class InventarioCedi(models.Model):
+    """
+    Existencias del CEDI para la fuente LOCAL de inventario (demostración y pruebas).
+
+    En producción el inventario del CEDI vive en su propio sistema y se consulta
+    por API (CEDI_INVENTARIO_FUENTE=api); esta tabla no se usa en ese modo.
+    No es una tienda: no tiene ventas, reposición ni usuarios.
+    """
+    producto = models.OneToOneField('Producto', on_delete=models.CASCADE, related_name='inventario_cedi')
+    disponible = models.PositiveIntegerField(default=0)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'inventario_cedi'
+        verbose_name = 'inventario del CEDI'
+        verbose_name_plural = 'inventario del CEDI'
+
+    def __str__(self):
+        return f"{self.producto.sku} · {self.disponible} u."

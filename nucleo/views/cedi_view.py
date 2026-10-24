@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect
@@ -8,7 +9,9 @@ from django.views.generic import TemplateView
 
 from nucleo.mixin import CediRequeridoMixin
 from nucleo.models import DetallePedido, Pedido, Tienda
-from nucleo.services.cedi.inventario import InventarioCediNoDisponible, consultar_stock_cedi
+from nucleo.services.cedi.inventario import (
+    InventarioCediNoDisponible, consultar_stock_cedi, registrar_salida_cedi,
+)
 from nucleo.services.pedidos import EstadoInvalido, despachar_pedido
 from nucleo.services.ventas.carga import normalizar_sku
 
@@ -128,7 +131,10 @@ class CediPedidoView(CediRequeridoMixin, TemplateView):
             messages.error(request, f'No se despachó: {error} Inténtalo de nuevo en unos minutos.')
             return redirect('cedi_pedido', pk=pedido.pk)
         try:
-            pedido = despachar_pedido(pedido, request.user, cantidades, motivos, stock_cedi=stock)
+            # Despacho y salida de inventario juntos: o se registran los dos, o ninguno
+            with transaction.atomic():
+                pedido = despachar_pedido(pedido, request.user, cantidades, motivos, stock_cedi=stock)
+                registrar_salida_cedi(pedido)
         except EstadoInvalido as e:
             messages.error(request, str(e))
             return redirect('cedi_pedido', pk=pedido.pk)

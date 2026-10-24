@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from accounts.forms import CustomUserCreationForm, CustomUserChangeForm
-from .models import Tienda, Producto, InventarioProducto, Lote, Pedido, DetallePedido, Usuario, Ventas, AnalisisReposicion
+from .models import Tienda, Producto, InventarioProducto, Lote, Pedido, DetallePedido, Usuario, Ventas, AnalisisReposicion, InventarioCedi
 # Register your models here.
 # Esto hace que las tablas aparezcan en el panel web
 admin.site.register(Tienda)
@@ -43,3 +43,13 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(InventarioCedi)
+class InventarioCediAdmin(admin.ModelAdmin):
+    """Existencias del CEDI para la fuente local (datos de prueba)."""
+    list_display = ('producto', 'disponible', 'actualizado')
+    list_editable = ('disponible',)
+    search_fields = ('producto__sku', 'producto__nombre')
+    list_select_related = ('producto',)
+    ordering = ('producto__nombre',)

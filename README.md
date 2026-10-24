@@ -48,10 +48,24 @@ python manage.py predecir_top_productos    # pronóstico del top 20 de productos
 El rol **Operador de CEDI** no pertenece a ninguna tienda: ve los pedidos aprobados de todas
 en `/cedi/`, ajusta cantidades o marca productos sin stock y confirma el despacho.
 
-Al preparar un despacho, el sistema consulta las existencias en la **API de inventario del CEDI**
-(variables `CEDI_INVENTARIO_*` en `.env`), propone las cantidades, impide despachar más de lo que hay
-y guarda en cada línea el stock informado al despachar. El inventario del CEDI no se copia en esta
-aplicación: su API es la única fuente de verdad. Para desarrollo sin API: `CEDI_INVENTARIO_SIMULADO=True`.
+Al preparar un despacho, el sistema consulta las existencias del CEDI, propone las cantidades,
+impide despachar más de lo que hay y guarda en cada línea el stock informado al despachar.
+La fuente del inventario se elige en `.env` con `CEDI_INVENTARIO_FUENTE`:
+
+| Fuente | Uso | Descuenta stock al despachar |
+| --- | --- | --- |
+| `api` | Producción: API oficial del CEDI (variables `CEDI_INVENTARIO_*`) | No: el inventario es del sistema del CEDI |
+| `local` | Demostración sin acceso a la API: tabla `inventario_cedi` | Sí, como lo haría el sistema real |
+| `simulado` | Pruebas rápidas: existencias inventadas al vuelo | No |
+
+Para cargar datos de prueba en la fuente local:
+
+```bash
+python manage.py cargar_inventario_cedi_prueba            # todos los productos, semilla 42
+python manage.py cargar_inventario_cedi_prueba --semilla 7
+```
+
+Las existencias locales también se pueden editar en el panel de administración.
 
 Flujo del pedido: **Pendiente → Aprobado (gerente) → Despachado (CEDI) → Recibido (tienda)**.
 Si el CEDI no despacha ninguna unidad, el pedido queda **Rechazado por CEDI**.
