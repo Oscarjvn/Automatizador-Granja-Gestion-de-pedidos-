@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import Coalesce
@@ -7,7 +8,18 @@ from django.views.generic import TemplateView
 
 from nucleo.mixin import CediRequeridoMixin
 from nucleo.models import DetallePedido, Pedido, Tienda
+from nucleo.services.cedi.inventario import InventarioCediNoDisponible, consultar_stock_cedi
 from nucleo.services.pedidos import EstadoInvalido, despachar_pedido
+from nucleo.services.ventas.carga import normalizar_sku
+
+
+def stock_del_pedido(pedido):
+    """(stock, error): existencias del CEDI para los productos del pedido, o el motivo del fallo."""
+    skus = [d.producto.sku for d in pedido.detalles.select_related('producto')]
+    try:
+        return consultar_stock_cedi(skus), None
+    except InventarioCediNoDisponible as e:
+        return None, str(e)
 
 ESTADOS_CEDI = {
     'AP': 'Por despachar',
@@ -77,10 +89,25 @@ class CediPedidoView(CediRequeridoMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         pedido = self.get_pedido()
+        editable = pedido.estatus == Pedido.Estado.APROBADO
+        detalles = list(pedido.detalles.select_related('producto').order_by('producto__cuadrante', 'producto__nombre'))
+
+        stock, error = (None, None)
+        if editable:
+            stock, error = stock_del_pedido(pedido)
+        for d in detalles:
+            d.disponible = None if stock is None else stock.get(normalizar_sku(d.producto.sku), 0)
+            d.propuesta = d.cant_pedida if d.disponible is None else min(d.cant_pedida, d.disponible)
+
         ctx['pedido'] = pedido
-        ctx['detalles'] = pedido.detalles.select_related('producto').order_by('producto__cuadrante', 'producto__nombre')
+        ctx['detalles'] = detalles
         ctx['motivos'] = DetallePedido.MotivoAjuste.choices
-        ctx['editable'] = pedido.estatus == Pedido.Estado.APROBADO
+        ctx['editable'] = editable
+        ctx['inventario_verificado'] = stock is not None
+        ctx['error_inventario'] = error
+        ctx['puede_despachar'] = editable and (stock is not None or settings.CEDI_PERMITIR_DESPACHO_SIN_INVENTARIO)
+        if editable and stock is not None:
+            ctx['unidades_sin_stock'] = sum(d.cant_pedida - d.propuesta for d in detalles)
         return ctx
 
     def post(self, request, *args, **kwargs):
@@ -95,8 +122,13 @@ class CediPedidoView(CediRequeridoMixin, TemplateView):
                     messages.error(request, 'Las cantidades deben ser números enteros.')
                     return redirect('cedi_pedido', pk=pedido.pk)
             motivos[detalle.pk] = request.POST.get(f'motivo_{detalle.pk}', '')
+        # Se vuelve a consultar: entre abrir la pantalla y confirmar, el stock pudo cambiar
+        stock, error = stock_del_pedido(pedido)
+        if error and not settings.CEDI_PERMITIR_DESPACHO_SIN_INVENTARIO:
+            messages.error(request, f'No se despachó: {error} Inténtalo de nuevo en unos minutos.')
+            return redirect('cedi_pedido', pk=pedido.pk)
         try:
-            pedido = despachar_pedido(pedido, request.user, cantidades, motivos)
+            pedido = despachar_pedido(pedido, request.user, cantidades, motivos, stock_cedi=stock)
         except EstadoInvalido as e:
             messages.error(request, str(e))
             return redirect('cedi_pedido', pk=pedido.pk)

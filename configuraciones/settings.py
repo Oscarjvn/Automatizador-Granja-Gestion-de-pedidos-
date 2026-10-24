@@ -208,6 +208,15 @@ JAZZMIN_UI_TWEAKS = {
 
 # --- Configuración de sincronización de ventas ---
 VENTAS_API_URL = os.environ.get('VENTAS_API_URL', 'http://192.168.20.27:7002/ventas')
+
+# API de inventario del CEDI (fuente oficial de existencias del centro de distribución)
+CEDI_INVENTARIO_URL = config('CEDI_INVENTARIO_URL', default='')
+CEDI_INVENTARIO_TOKEN = config('CEDI_INVENTARIO_TOKEN', default='')
+CEDI_INVENTARIO_TIMEOUT = config('CEDI_INVENTARIO_TIMEOUT', default=8, cast=int)
+# Solo para desarrollo: existencias inventadas, sin llamar a la API
+CEDI_INVENTARIO_SIMULADO = config('CEDI_INVENTARIO_SIMULADO', default=False, cast=bool)
+# Si la API no responde: False bloquea el despacho; True permite despachar sin verificar
+CEDI_PERMITIR_DESPACHO_SIN_INVENTARIO = config('CEDI_PERMITIR_DESPACHO_SIN_INVENTARIO', default=False, cast=bool)
 VENTAS_SUCURSAL_DEFAULT = os.environ.get('VENTAS_SUCURSAL_DEFAULT', 'SUC019')
 VENTAS_TIENDA_DEFAULT = int(os.environ.get('VENTAS_TIENDA_DEFAULT', '1'))
 VENTAS_JSON_DIR = BASE_DIR / 'datos' / 'ventas'

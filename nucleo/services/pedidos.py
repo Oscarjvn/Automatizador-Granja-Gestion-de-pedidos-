@@ -2,6 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from nucleo.models import DetallePedido, Lote, Pedido
+from nucleo.services.ventas.carga import normalizar_sku
 
 
 class EstadoInvalido(Exception):
@@ -157,7 +158,7 @@ def recibir_pedido(pedido, cantidades_recibidas, lotes_por_detalle):
 
 
 @transaction.atomic
-def despachar_pedido(pedido, usuario, cantidades, motivos):
+def despachar_pedido(pedido, usuario, cantidades, motivos, stock_cedi=None):
     """
     El CEDI confirma un pedido aprobado y registra lo que despacha.
 
@@ -165,6 +166,13 @@ def despachar_pedido(pedido, usuario, cantidades, motivos):
                 despacha completa (lo que pidió la tienda).
     motivos:    {detalle_pk: código de MotivoAjuste}. Obligatorio en cada línea
                 que se despacha incompleta o en cero.
+
+    stock_cedi: {sku: unidades disponibles} según la API del CEDI, o None si no
+                se pudo verificar. Con stock, no se despacha más de lo que hay
+                y el motivo se deduce de los datos cuando es posible:
+                0 disponibles → Sin stock; se envía todo lo que había → Stock parcial.
+                El operador solo indica el motivo si envía menos de lo que podría.
+                Un SKU que la API no devuelve se toma como 0 disponibles.
 
     Si no se despacha ninguna unidad, el pedido queda RECHAZADO por el CEDI.
     """
@@ -179,20 +187,38 @@ def despachar_pedido(pedido, usuario, cantidades, motivos):
     total = 0
     for detalle in pedido.detalles.select_related('producto'):
         pedida = detalle.cant_pedida
-        cantidad = cantidades.get(detalle.pk, pedida)
+        disponible = None
+        if stock_cedi is not None:
+            disponible = stock_cedi.get(normalizar_sku(detalle.producto.sku), 0)
+        maximo = pedida if disponible is None else min(pedida, disponible)
+
+        cantidad = cantidades.get(detalle.pk, maximo)
         if cantidad < 0 or cantidad > pedida:
             raise DespachoInvalido(
                 f"{detalle.producto.nombre}: la cantidad despachada debe estar entre 0 y {pedida}."
             )
-        motivo = motivos.get(detalle.pk, '') if cantidad < pedida else ''
-        if cantidad < pedida and motivo not in motivos_validos:
+        if disponible is not None and cantidad > disponible:
             raise DespachoInvalido(
-                f"{detalle.producto.nombre}: indique el motivo por el que se despachan "
-                f"{cantidad} de {pedida} unidades."
+                f"{detalle.producto.nombre}: el CEDI solo tiene {disponible} unidades disponibles."
             )
+
+        motivo = ''
+        if cantidad < pedida:
+            motivo = motivos.get(detalle.pk, '')
+            if motivo not in motivos_validos:
+                if disponible is not None and cantidad == disponible:
+                    # El inventario explica la diferencia: el motivo no depende de la persona
+                    motivo = (DetallePedido.MotivoAjuste.SIN_STOCK if disponible == 0
+                              else DetallePedido.MotivoAjuste.STOCK_PARCIAL)
+                else:
+                    raise DespachoInvalido(
+                        f"{detalle.producto.nombre}: indique el motivo por el que se despachan "
+                        f"{cantidad} de {pedida} unidades."
+                    )
         detalle.cant_despachada = cantidad
         detalle.motivo_ajuste = motivo
-        detalle.save(update_fields=['cant_despachada', 'motivo_ajuste'])
+        detalle.stock_cedi_al_despachar = disponible
+        detalle.save(update_fields=['cant_despachada', 'motivo_ajuste', 'stock_cedi_al_despachar'])
         total += cantidad
 
     pedido.estatus = Pedido.Estado.DESPACHADO if total > 0 else Pedido.Estado.RECHAZADO

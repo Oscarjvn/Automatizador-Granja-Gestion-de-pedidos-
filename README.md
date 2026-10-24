@@ -48,6 +48,11 @@ python manage.py predecir_top_productos    # pronóstico del top 20 de productos
 El rol **Operador de CEDI** no pertenece a ninguna tienda: ve los pedidos aprobados de todas
 en `/cedi/`, ajusta cantidades o marca productos sin stock y confirma el despacho.
 
+Al preparar un despacho, el sistema consulta las existencias en la **API de inventario del CEDI**
+(variables `CEDI_INVENTARIO_*` en `.env`), propone las cantidades, impide despachar más de lo que hay
+y guarda en cada línea el stock informado al despachar. El inventario del CEDI no se copia en esta
+aplicación: su API es la única fuente de verdad. Para desarrollo sin API: `CEDI_INVENTARIO_SIMULADO=True`.
+
 Flujo del pedido: **Pendiente → Aprobado (gerente) → Despachado (CEDI) → Recibido (tienda)**.
 Si el CEDI no despacha ninguna unidad, el pedido queda **Rechazado por CEDI**.
 

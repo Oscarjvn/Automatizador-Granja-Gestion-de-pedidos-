@@ -30,6 +30,11 @@ DATABASES = {
 # La barra de depuración no debe intervenir en las pruebas
 INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'debug_toolbar']
 MIDDLEWARE = [m for m in MIDDLEWARE if 'debug_toolbar' not in m]
+# Las pruebas de vistas existentes despachan sin API; las del inventario del CEDI
+# activan el bloqueo explícitamente con override_settings.
+CEDI_INVENTARIO_URL = ''
+CEDI_INVENTARIO_SIMULADO = False
+CEDI_PERMITIR_DESPACHO_SIN_INVENTARIO = True
 CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
 
 EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'

@@ -145,6 +145,8 @@ class DetallePedido(models.Model):
     cant_sugerida = models.IntegerField()
     cant_ajustada = models.IntegerField(blank=True, null=True)
     cant_despachada = models.IntegerField(blank=True, null=True)
+    # Existencia que informó la API del CEDI al despachar (None = no se pudo verificar)
+    stock_cedi_al_despachar = models.IntegerField(blank=True, null=True)
     cant_recibida = models.IntegerField(blank=True, null=True)
 
     class MotivoAjuste(models.TextChoices):
