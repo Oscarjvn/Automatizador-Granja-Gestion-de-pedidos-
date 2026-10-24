@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}CEDI · Pedido #{{ pedido.pk }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <div class="mb-1"><a href="{% url 'cedi_panel' %}" class="text-muted"><i class="ti ti-arrow-left"></i> Pedidos de tiendas</a></div>
+            <h2 class="page-title">Pedido #{{ pedido.pk }} · {{ pedido.tienda.nombre }}</h2>
+            <div class="text-muted mt-1">
+                Creado por {{ pedido.usuario.get_full_name|default:pedido.usuario.username }} el {{ pedido.fecha_creacion|date:"d/m/Y" }},
+                aprobado el {{ pedido.fecha_aprobacion|date:"d/m/Y H:i" }}.
+                {% if pedido.fecha_despacho %}
+                    {% if pedido.estatus == 'RC' %}Rechazado{% else %}Despachado{% endif %} el {{ pedido.fecha_despacho|date:"d/m/Y H:i" }}
+                    por {{ pedido.despachado_por.get_full_name|default:pedido.despachado_por.username }}.
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-auto">
+            <span class="badge fs-4 {% if pedido.estatus == 'AP' %}bg-yellow text-dark{% elif pedido.estatus == 'DE' %}bg-azure text-white{% elif pedido.estatus == 'RE' %}bg-green text-white{% else %}bg-red text-white{% endif %}">
+                {% if pedido.estatus == 'AP' %}Por despachar{% elif pedido.estatus == 'DE' %}En tránsito{% else %}{{ pedido.get_estatus_display }}{% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+
+<form method="post" class="mt-3">
+    {% csrf_token %}
+    {% if editable %}
+    <div class="alert alert-info">
+        Revisa cada producto. Si no puedes enviar la cantidad completa, escribe lo que sí despachas e indica el motivo.
+        El botón <strong>Sin stock</strong> pone la línea en cero.
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cuadrante</th>
+                        <th class="text-end">Pedido</th>
+                        <th class="text-end" style="width: 140px">Despachado</th>
+                        <th style="min-width: 220px">Motivo del ajuste</th>
+                        {% if pedido.estatus == 'RE' %}<th class="text-end">Recibido</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in detalles %}
+                    <tr class="linea" data-pedida="{{ d.cant_pedida }}">
+                        <td>
+                            <div>{{ d.producto.nombre }}</div>
+                            <div class="text-muted small">SKU {{ d.producto.sku }}</div>
+                        </td>
+                        <td>{{ d.producto.cuadrante|default:"—" }}</td>
+                        <td class="text-end">{{ d.cant_pedida }}</td>
+                        <td class="text-end">
+                            {% if editable %}
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <input type="number" name="despachada_{{ d.pk }}" value="{{ d.cant_pedida }}"
+                                           min="0" max="{{ d.cant_pedida }}" class="form-control form-control-sm text-end campo-despachada"
+                                           style="width: 80px" aria-label="Unidades despachadas de {{ d.producto.nombre }}">
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-sin-stock" title="Sin stock">Sin stock</button>
+                                </div>
+                            {% else %}
+                                {{ d.cant_despachada|default:"—" }}
+                                {% if d.diferencia_despacho %}<span class="text-red small">(−{{ d.diferencia_despacho }})</span>{% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if editable %}
+                                <select name="motivo_{{ d.pk }}" class="form-select form-select-sm campo-motivo" aria-label="Motivo del ajuste de {{ d.producto.nombre }}">
+                                    <option value="">Sin ajuste</option>
+                                    {% for valor, nombre in motivos %}<option value="{{ valor }}">{{ nombre }}</option>{% endfor %}
+                                </select>
+                            {% else %}
+                                {{ d.get_motivo_ajuste_display|default:"—" }}
+                            {% endif %}
+                        </td>
+                        {% if pedido.estatus == 'RE' %}
+                            <td class="text-end">
+                                {{ d.cant_recibida|default:"—" }}
+                                {% if d.diferencia_recepcion %}<span class="text-red small">({{ d.diferencia_recepcion|stringformat:"+d" }} faltante)</span>{% endif %}
+                            </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if editable %}
+        <div class="card-footer d-flex align-items-center gap-3">
+            <div class="text-muted" id="resumen-despacho"></div>
+            <button type="submit" class="btn btn-primary ms-auto">Confirmar despacho</button>
+        </div>
+        {% endif %}
+    </div>
+</form>
+
+{% if editable %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filas = document.querySelectorAll('.linea');
+    const resumen = document.getElementById('resumen-despacho');
+
+    function actualizar() {
+        let pedidas = 0, enviadas = 0, ajustadas = 0;
+        filas.forEach(function (fila) {
+            const pedida = parseInt(fila.dataset.pedida, 10);
+            const campo = fila.querySelector('.campo-despachada');
+            const motivo = fila.querySelector('.campo-motivo');
+            const valor = Math.max(0, Math.min(pedida, parseInt(campo.value || '0', 10)));
+            pedidas += pedida; enviadas += valor;
+            const incompleta = valor < pedida;
+            if (incompleta) ajustadas++;
+            // El motivo solo se pide cuando la línea va incompleta
+            motivo.required = incompleta;
+            motivo.disabled = !incompleta;
+            if (!incompleta) motivo.value = '';
+            else if (!motivo.value) motivo.value = valor === 0 ? 'SIN_STOCK' : 'STOCK_PARCIAL';
+        });
+        resumen.textContent = 'Se despachan ' + enviadas + ' de ' + pedidas + ' unidades'
+            + (ajustadas ? ' · ' + ajustadas + ' producto(s) con ajuste' : '') + '.';
+    }
+
+    filas.forEach(function (fila) {
+        fila.querySelector('.campo-despachada').addEventListener('input', actualizar);
+        fila.querySelector('.btn-sin-stock').addEventListener('click', function () {
+            fila.querySelector('.campo-despachada').value = 0;
+            actualizar();
+            fila.querySelector('.campo-motivo').value = 'SIN_STOCK';
+        });
+    });
+    actualizar();
+});
+</script>
+{% endif %}
+{% endblock %}

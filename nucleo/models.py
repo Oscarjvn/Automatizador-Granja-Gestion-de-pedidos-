@@ -101,6 +101,8 @@ class Pedido(models.Model):
         PENDIENTE= 'PE', 'Pendiente'
         CANCELADO= 'CA', 'Cancelado'
         APROBADO= 'AP', 'Aprobado'
+        DESPACHADO = 'DE', 'Despachado'
+        RECHAZADO = 'RC', 'Rechazado por CEDI'
         RECIBIDO= 'RE',  'Recibido'
 
     
@@ -119,6 +121,14 @@ class Pedido(models.Model):
 
     )
     fecha_aprobacion = models.DateTimeField(null=True, blank=True)
+    fecha_despacho = models.DateTimeField(null=True, blank=True)
+    despachado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pedidos_despachados',
+    )
     fecha_recepcion = models.DateTimeField(null=True, blank=True)
 
     objects= TenantManager()
@@ -134,11 +144,39 @@ class DetallePedido(models.Model):
     producto = models.ForeignKey(Producto, models.PROTECT, db_column='id_producto')
     cant_sugerida = models.IntegerField()
     cant_ajustada = models.IntegerField(blank=True, null=True)
+    cant_despachada = models.IntegerField(blank=True, null=True)
     cant_recibida = models.IntegerField(blank=True, null=True)
+
+    class MotivoAjuste(models.TextChoices):
+        SIN_STOCK = 'SIN_STOCK', 'Sin stock en el CEDI'
+        STOCK_PARCIAL = 'STOCK_PARCIAL', 'Stock parcial'
+        DESCONTINUADO = 'DESCONTINUADO', 'Producto descontinuado'
+        OTRO = 'OTRO', 'Otro motivo'
+
+    motivo_ajuste = models.CharField(max_length=20, choices=MotivoAjuste.choices, blank=True, default='')
 
     class Meta:
         managed = True
         db_table = 'detalle_pedido'
+
+    @property
+    def cant_pedida(self):
+        """Lo que la tienda pidió finalmente: la cantidad ajustada o, si no hay, la sugerida."""
+        return self.cant_ajustada if self.cant_ajustada is not None else self.cant_sugerida
+
+    @property
+    def diferencia_despacho(self):
+        """Unidades que el CEDI dejó de enviar respecto a lo pedido."""
+        if self.cant_despachada is None:
+            return None
+        return self.cant_pedida - self.cant_despachada
+
+    @property
+    def diferencia_recepcion(self):
+        """Unidades que llegaron de menos (o de más, si es negativo) respecto a lo despachado."""
+        if self.cant_despachada is None or self.cant_recibida is None:
+            return None
+        return self.cant_despachada - self.cant_recibida
 
 class Usuario(models.Model):
     """Perfil del usuario: tienda a la que pertenece y rol que ocupa en ella."""
@@ -147,14 +185,27 @@ class Usuario(models.Model):
         GERENTE = 'GERENTE', 'Gerente de tienda'
         SUBGERENTE = 'SUBGERENTE', 'Subgerente'
         SUPERVISOR = 'SUPERVISOR', 'Supervisor'
+        CEDI = 'CEDI', 'Operador de CEDI'
 
     usuario= models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    tienda= models.ForeignKey('Tienda', on_delete=models.CASCADE, db_column='id_tienda')
+    # El operador de CEDI no pertenece a una tienda: atiende los pedidos de todas
+    tienda= models.ForeignKey('Tienda', on_delete=models.CASCADE, db_column='id_tienda', null=True, blank=True)
     rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.SUPERVISOR)
 
     class Meta:
         db_table = 'usuario'
     
+    @property
+    def es_cedi(self):
+        return self.rol == self.Rol.CEDI
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.es_cedi and self.tienda_id:
+            raise ValidationError({'tienda': 'El operador de CEDI no se asigna a una tienda.'})
+        if not self.es_cedi and not self.tienda_id:
+            raise ValidationError({'tienda': 'Los usuarios de tienda deben tener una tienda asignada.'})
+
     def __str__(self):
         return f"{self.usuario.username} ({self.get_rol_display()})"
 

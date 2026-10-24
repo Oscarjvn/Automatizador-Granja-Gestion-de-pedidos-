@@ -47,6 +47,10 @@ def _bloquear(pedido):
     return pedido
 
 
+class DespachoInvalido(EstadoInvalido):
+    """Las cantidades o motivos del despacho del CEDI no son válidos."""
+
+
 class RecepcionInvalida(EstadoInvalido):
     """Los datos de recepción no son coherentes (ej. lotes que no cuadran)."""
 
@@ -67,10 +71,13 @@ def aprobar_pedido(pedido):
 @transaction.atomic
 def cancelar_pedido(pedido):
     pedido = _bloquear(pedido)
-    if pedido.estatus == Pedido.Estado.RECIBIDO:
-        raise EstadoInvalido("No se puede cancelar un pedido ya recibido.")
     if pedido.estatus == Pedido.Estado.CANCELADO:
         raise EstadoInvalido("El pedido ya está cancelado.")
+    if pedido.estatus not in (Pedido.Estado.PENDIENTE, Pedido.Estado.APROBADO):
+        raise EstadoInvalido(
+            f"No se puede cancelar un pedido {pedido.get_estatus_display().lower()}: "
+            f"el CEDI ya lo procesó."
+        )
 
     pedido.estatus = Pedido.Estado.CANCELADO
     pedido.save(update_fields=['estatus'])
@@ -94,19 +101,17 @@ def recibir_pedido(pedido, cantidades_recibidas, lotes_por_detalle):
     }
     """
     pedido = _bloquear(pedido)
-    if pedido.estatus != Pedido.Estado.APROBADO:
+    if pedido.estatus != Pedido.Estado.DESPACHADO:
         raise EstadoInvalido(
-            f"Solo se pueden recibir pedidos APROBADOS. "
+            f"Solo se pueden recibir pedidos que el CEDI ya despachó. "
             f"Estado actual: {pedido.get_estatus_display()}."
         )
 
     lotes_creados = 0
 
     for detalle in pedido.detalles.select_related('producto'):
-        cantidad = cantidades_recibidas.get(
-            detalle.pk,
-            detalle.cant_ajustada or detalle.cant_sugerida,
-        )
+        propuesta = detalle.cant_despachada if detalle.cant_despachada is not None else detalle.cant_pedida
+        cantidad = cantidades_recibidas.get(detalle.pk, propuesta)
         if cantidad < 0:
             cantidad = 0
 
@@ -149,3 +154,49 @@ def recibir_pedido(pedido, cantidades_recibidas, lotes_por_detalle):
     pedido.save(update_fields=['estatus', 'fecha_recepcion'])
 
     return pedido, lotes_creados
+
+
+@transaction.atomic
+def despachar_pedido(pedido, usuario, cantidades, motivos):
+    """
+    El CEDI confirma un pedido aprobado y registra lo que despacha.
+
+    cantidades: {detalle_pk: unidades despachadas}. Si falta una línea, se
+                despacha completa (lo que pidió la tienda).
+    motivos:    {detalle_pk: código de MotivoAjuste}. Obligatorio en cada línea
+                que se despacha incompleta o en cero.
+
+    Si no se despacha ninguna unidad, el pedido queda RECHAZADO por el CEDI.
+    """
+    pedido = _bloquear(pedido)
+    if pedido.estatus != Pedido.Estado.APROBADO:
+        raise EstadoInvalido(
+            f"Solo se despachan pedidos aprobados por el gerente. "
+            f"Estado actual: {pedido.get_estatus_display()}."
+        )
+
+    motivos_validos = set(DetallePedido.MotivoAjuste.values)
+    total = 0
+    for detalle in pedido.detalles.select_related('producto'):
+        pedida = detalle.cant_pedida
+        cantidad = cantidades.get(detalle.pk, pedida)
+        if cantidad < 0 or cantidad > pedida:
+            raise DespachoInvalido(
+                f"{detalle.producto.nombre}: la cantidad despachada debe estar entre 0 y {pedida}."
+            )
+        motivo = motivos.get(detalle.pk, '') if cantidad < pedida else ''
+        if cantidad < pedida and motivo not in motivos_validos:
+            raise DespachoInvalido(
+                f"{detalle.producto.nombre}: indique el motivo por el que se despachan "
+                f"{cantidad} de {pedida} unidades."
+            )
+        detalle.cant_despachada = cantidad
+        detalle.motivo_ajuste = motivo
+        detalle.save(update_fields=['cant_despachada', 'motivo_ajuste'])
+        total += cantidad
+
+    pedido.estatus = Pedido.Estado.DESPACHADO if total > 0 else Pedido.Estado.RECHAZADO
+    pedido.fecha_despacho = timezone.now()
+    pedido.despachado_por = usuario
+    pedido.save(update_fields=['estatus', 'fecha_despacho', 'despachado_por'])
+    return pedido

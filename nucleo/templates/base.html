@@ -38,6 +38,14 @@
 
                 <div class="collapse navbar-collapse" id="sidebar-menu">
                     <ul class="navbar-nav pt-lg-3">
+                        {% if rol_actual == 'CEDI' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'cedi_panel' %}">
+                                <span class="nav-link-icon"><i class="ti ti-truck-delivery"></i></span>
+                                <span class="nav-link-title">Pedidos de tiendas</span>
+                            </a>
+                        </li>
+                        {% else %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'home' %}">
                                 <span class="nav-link-icon"><i class="ti ti-dashboard"></i></span>
@@ -99,6 +107,7 @@
     </a>
             </li>
             
+                        {% endif %}
                     </ul>
                 </div>
             </div>
@@ -116,7 +125,7 @@
                                     <div>{{ request.user.get_full_name|default:request.user.username }}</div>
                                     <div class="mt-1 small text-muted">
                                         {% if request.user.usuario %}
-                                            {{ request.user.usuario.tienda.nombre }} · {{ request.user.usuario.get_rol_display }}
+                                            {% if request.user.usuario.es_cedi %}Centro de distribución{% else %}{{ request.user.usuario.tienda.nombre }}{% endif %} · {{ request.user.usuario.get_rol_display }}
                                         {% endif %}
                                     </div>
                                 </div>

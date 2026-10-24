@@ -91,13 +91,17 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-6">
-                        <div class="text-muted">Pendientes</div>
+                    <div class="col-4">
+                        <div class="text-muted">Por aprobar</div>
                         <div class="h2 mb-0 text-warning">{{ pedidos_pendientes }}</div>
                     </div>
-                    <div class="col-6">
-                        <div class="text-muted">Aprobados</div>
-                        <div class="h2 mb-0 text-info">{{ pedidos_aprobados }}</div>
+                    <div class="col-4">
+                        <div class="text-muted">En el CEDI</div>
+                        <div class="h2 mb-0">{{ pedidos_aprobados }}</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted">En tránsito</div>
+                        <div class="h2 mb-0 text-azure">{{ pedidos_en_transito }}</div>
                     </div>
                 </div>
                 <a href="{% url 'pedidos' %}" class="btn btn-outline-primary mt-3 w-100">

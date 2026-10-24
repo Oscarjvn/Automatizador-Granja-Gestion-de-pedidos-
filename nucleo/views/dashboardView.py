@@ -59,6 +59,11 @@ class HomePage(TiendaRequeridaMixin, TemplateView):
             estatus=Pedido.Estado.APROBADO,
         ).count()
 
+        ctx['pedidos_en_transito'] = Pedido.todos.filter(
+            tienda=tienda,
+            estatus=Pedido.Estado.DESPACHADO,
+        ).count()
+
         # --- Top 10 productos por demanda diaria ---
         ctx['top_demanda'] = list(
             AnalisisReposicion.objects

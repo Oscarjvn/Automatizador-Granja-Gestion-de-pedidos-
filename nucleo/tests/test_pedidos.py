@@ -5,7 +5,7 @@ from django.test import TestCase
 
 from nucleo.models import Lote, Pedido, Usuario
 from nucleo.services.pedidos import (
-    EstadoInvalido, RecepcionInvalida, aprobar_pedido, cancelar_pedido, generar_pedido_sugerido, recibir_pedido,
+    EstadoInvalido, RecepcionInvalida, aprobar_pedido, despachar_pedido, cancelar_pedido, generar_pedido_sugerido, recibir_pedido,
 )
 from nucleo.tests.utils import crear_producto, crear_tienda, crear_usuario
 
@@ -20,6 +20,12 @@ class CicloPedidoTests(TestCase):
             {'producto': self.p1, 'cant_sugerida': 10, 'cant_ajustada': None},
             {'producto': self.p2, 'cant_sugerida': 5, 'cant_ajustada': 8},
         ])
+        self.cedi = crear_usuario(None, Usuario.Rol.CEDI)
+
+    def listo_para_recibir(self):
+        """Lleva el pedido por el flujo completo: gerente aprueba y CEDI despacha todo."""
+        aprobar_pedido(self.pedido)
+        despachar_pedido(self.pedido, self.cedi, {}, {})
 
     def test_generar_crea_pedido_pendiente_con_sus_lineas(self):
         self.assertEqual(self.pedido.estatus, Pedido.Estado.PENDIENTE)
@@ -39,12 +45,17 @@ class CicloPedidoTests(TestCase):
         with self.assertRaises(EstadoInvalido):
             aprobar_pedido(self.pedido)
 
+    def test_no_se_recibe_un_pedido_que_el_cedi_no_despacho(self):
+        aprobar_pedido(self.pedido)
+        with self.assertRaises(EstadoInvalido):
+            recibir_pedido(self.pedido, {}, {})
+
     def test_no_se_recibe_un_pedido_pendiente(self):
         with self.assertRaises(EstadoInvalido):
             recibir_pedido(self.pedido, {}, {})
 
     def test_recibir_guarda_cantidades_y_crea_lotes(self):
-        aprobar_pedido(self.pedido)
+        self.listo_para_recibir()
         d1, d2 = list(self.pedido.detalles.order_by('pk'))
         _, lotes = recibir_pedido(
             self.pedido,
@@ -64,7 +75,7 @@ class CicloPedidoTests(TestCase):
         self.assertEqual(Lote.todos.filter(pedido_origen=self.pedido).count(), 2)
 
     def test_lotes_sin_fecha_o_sin_cantidad_se_ignoran(self):
-        aprobar_pedido(self.pedido)
+        self.listo_para_recibir()
         d1 = self.pedido.detalles.order_by('pk').first()
         _, lotes = recibir_pedido(self.pedido, {}, {d1.pk: [
             {'cantidad': 0, 'fecha_vencimiento': date(2026, 12, 1)},
@@ -73,7 +84,7 @@ class CicloPedidoTests(TestCase):
         self.assertEqual(lotes, 0)
 
     def test_cantidad_negativa_se_guarda_como_cero(self):
-        aprobar_pedido(self.pedido)
+        self.listo_para_recibir()
         d1 = self.pedido.detalles.order_by('pk').first()
         recibir_pedido(self.pedido, {d1.pk: -4}, {})
         d1.refresh_from_db()
@@ -84,7 +95,7 @@ class CicloPedidoTests(TestCase):
         self.assertEqual(self.pedido.estatus, Pedido.Estado.CANCELADO)
 
     def test_no_se_cancela_un_pedido_recibido(self):
-        aprobar_pedido(self.pedido)
+        self.listo_para_recibir()
         recibir_pedido(self.pedido, {}, {})
         with self.assertRaises(EstadoInvalido):
             cancelar_pedido(self.pedido)
@@ -95,7 +106,7 @@ class CicloPedidoTests(TestCase):
             cancelar_pedido(self.pedido)
 
     def test_lotes_que_no_cuadran_se_rechazan_sin_guardar_nada(self):
-        aprobar_pedido(self.pedido)
+        self.listo_para_recibir()
         d1 = self.pedido.detalles.order_by('pk').first()
         with self.assertRaises(RecepcionInvalida):
             recibir_pedido(self.pedido, {d1.pk: 9}, {d1.pk: [
@@ -103,12 +114,12 @@ class CicloPedidoTests(TestCase):
             ]})
         self.pedido.refresh_from_db()
         d1.refresh_from_db()
-        self.assertEqual(self.pedido.estatus, Pedido.Estado.APROBADO)
+        self.assertEqual(self.pedido.estatus, Pedido.Estado.DESPACHADO)
         self.assertIsNone(d1.cant_recibida)
         self.assertEqual(Lote.todos.count(), 0)
 
     def test_sin_lotes_se_acepta_cualquier_cantidad(self):
-        aprobar_pedido(self.pedido)
+        self.listo_para_recibir()
         d1 = self.pedido.detalles.order_by('pk').first()
         recibir_pedido(self.pedido, {d1.pk: 7}, {})
         self.pedido.refresh_from_db()

@@ -40,15 +40,19 @@
                     <strong>Estado:</strong>
                     <span class="badge
                         {% if pedido.estatus == 'PE' %}bg-warning text-dark
-                        {% elif pedido.estatus == 'AP' %}bg-info text-dark
+                        {% elif pedido.estatus == 'AP' %}bg-yellow text-dark
+                        {% elif pedido.estatus == 'DE' %}bg-azure text-white
                         {% elif pedido.estatus == 'RE' %}bg-success
-                        {% elif pedido.estatus == 'CA' %}bg-danger
+                        {% elif pedido.estatus == 'CA' or pedido.estatus == 'RC' %}bg-danger
                         {% endif %}">
                         {{ pedido.get_estatus_display }}
                     </span>
                 </p>
                 {% if pedido.fecha_aprobacion %}
                     <p><strong>Aprobado:</strong> {{ pedido.fecha_aprobacion|date:"d/m/Y H:i" }}</p>
+                {% endif %}
+                {% if pedido.fecha_despacho %}
+                    <p><strong>{% if pedido.estatus == 'RC' %}Rechazado por el CEDI{% else %}Despachado por el CEDI{% endif %}:</strong> {{ pedido.fecha_despacho|date:"d/m/Y H:i" }}</p>
                 {% endif %}
                 {% if pedido.fecha_recepcion %}
                     <p><strong>Recibido:</strong> {{ pedido.fecha_recepcion|date:"d/m/Y H:i" }}</p>
@@ -61,10 +65,19 @@
 <form method="post" class="mt-3" id="form-recibir">
     {% csrf_token %}
 
-    {% if pedido.estatus == 'AP' %}
+    {% if pedido.estatus == 'DE' %}
         <div class="alert alert-info">
             <i class="ti ti-info-circle me-1"></i>
-            Registra los lotes recibidos. Un producto puede venir en varios lotes con fechas distintas.
+            Registra lo que llegó. La cantidad recibida viene con lo que despachó el CEDI; corrígela si llegó otra cosa.
+            Un producto puede venir en varios lotes con fechas distintas.
+        </div>
+    {% elif pedido.estatus == 'AP' %}
+        <div class="alert alert-warning">
+            <i class="ti ti-truck me-1"></i> Pedido enviado al CEDI. Podrás registrar la recepción cuando el CEDI lo despache.
+        </div>
+    {% elif pedido.estatus == 'RC' %}
+        <div class="alert alert-danger">
+            <i class="ti ti-ban me-1"></i> El CEDI rechazó este pedido: no tenía stock de ninguno de los productos.
         </div>
     {% endif %}
 
@@ -77,8 +90,9 @@
                         <th>Producto</th>
                         <th class="text-end">Sug.</th>
                         <th class="text-end">Ajust.</th>
+                        <th class="text-end">Despachada</th>
                         <th class="text-end">Recibida</th>
-                        {% if pedido.estatus == 'AP' %}
+                        {% if pedido.estatus == 'DE' %}
                             <th style="min-width: 420px;">Lotes recibidos</th>
                         {% else %}
                             <th>Lotes registrados</th>
@@ -99,10 +113,18 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            {% if pedido.estatus == 'AP' %}
+                            {% if d.cant_despachada is not None %}
+                                {{ d.cant_despachada }}
+                                {% if d.motivo_ajuste %}<div class="text-red small">{{ d.get_motivo_ajuste_display }}</div>{% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if pedido.estatus == 'DE' %}
                                 <input type="number"
                                        name="recibida_{{ d.pk }}"
-                                       value="{{ d.cant_ajustada|default:d.cant_sugerida }}"
+                                       value="{{ d.cant_despachada }}"
                                        min="0"
                                        class="form-control form-control-sm text-end"
                                        style="width: 90px; display: inline-block;">
@@ -111,7 +133,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if pedido.estatus == 'AP' %}
+                            {% if pedido.estatus == 'DE' %}
                                 <div class="lotes-container" data-detalle-pk="{{ d.pk }}"></div>
                                 <button type="button"
                                         class="btn btn-sm btn-outline-primary mt-1 btn-agregar-lote"
@@ -134,22 +156,23 @@
             </table>
         </div>
 
-        {% if pedido.estatus == 'AP' %}
+        {% if pedido.estatus == 'DE' %}
         <div class="card-footer d-flex gap-2">
             <button type="submit"
                     formaction="{% url 'pedido_recibir' pedido.pk %}"
                     class="btn btn-success">
-                <i class="ti ti-check me-1"></i> Marcar como RECIBIDO
+                <i class="ti ti-check me-1"></i> Registrar recepción
             </button>
-            {% if permisos.cancelar_pedido %}
+        </div>
+        {% elif pedido.estatus == 'AP' and permisos.cancelar_pedido %}
+        <div class="card-footer">
             <button type="submit"
                     formaction="{% url 'pedido_cancelar' pedido.pk %}"
                     formnovalidate
                     class="btn btn-outline-danger"
-                    onclick="return confirm('¿Cancelar este pedido?');">
+                    onclick="return confirm('¿Cancelar este pedido antes de que el CEDI lo despache?');">
                 Cancelar pedido
             </button>
-            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -179,7 +202,7 @@
     </div>
 </form>
 
-{% if pedido.estatus == 'AP' %}
+{% if pedido.estatus == 'DE' %}
 <script>
 (function() {
     const contadores = {};

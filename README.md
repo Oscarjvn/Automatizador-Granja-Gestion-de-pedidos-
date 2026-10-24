@@ -15,6 +15,16 @@ python manage.py runserver
 
 ## Tareas programadas
 
+En producción basta con programar **un solo comando** una vez al día (por ejemplo a las 2:00 a. m.).
+Ejecuta en orden la sincronización, el recálculo y las alertas, y evita que dos ejecuciones se pisen:
+
+```bash
+python manage.py tareas_diarias
+python manage.py tareas_diarias --sin-sincronizar   # si el POS no está disponible
+```
+
+Los comandos individuales siguen disponibles:
+
 ```bash
 python manage.py sincronizar_ventas        # descarga y carga las ventas de ayer
 python manage.py recalcular_reposicion     # recalcula DDP, ROP y stock máximo
@@ -34,6 +44,12 @@ python manage.py predecir_top_productos    # pronóstico del top 20 de productos
 | Reportes y predicción | sí | sí | no |
 | Exportar a Excel | sí | sí | no |
 | Aprobar o cancelar pedido | sí | no | no |
+
+El rol **Operador de CEDI** no pertenece a ninguna tienda: ve los pedidos aprobados de todas
+en `/cedi/`, ajusta cantidades o marca productos sin stock y confirma el despacho.
+
+Flujo del pedido: **Pendiente → Aprobado (gerente) → Despachado (CEDI) → Recibido (tienda)**.
+Si el CEDI no despacha ninguna unidad, el pedido queda **Rechazado por CEDI**.
 
 El rol se asigna en el panel de administración, en el perfil de tienda del usuario.
 No hay registro público: las cuentas solo se crean desde el panel de administración.

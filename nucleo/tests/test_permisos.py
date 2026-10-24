@@ -22,15 +22,16 @@ class MatrizPermisosTests(TestCase):
                         'recibir_pedido', 'ver_reportes', 'exportar'},
             R.SUBGERENTE: {'generar_pedido', 'recibir_pedido', 'ver_reportes', 'exportar'},
             R.SUPERVISOR: {'generar_pedido', 'recibir_pedido'},
+            R.CEDI: {'gestionar_cedi'},
         }
         for rol, permitidas in esperado.items():
-            user = crear_usuario(self.tienda, rol)
+            user = crear_usuario(None if rol == R.CEDI else self.tienda, rol)
             for accion in PERMISOS:
                 with self.subTest(rol=rol, accion=accion):
                     self.assertEqual(tiene_permiso(user, accion), accion in permitidas)
 
-    def test_solo_existen_tres_roles(self):
-        self.assertEqual(set(R.values), {'GERENTE', 'SUBGERENTE', 'SUPERVISOR'})
+    def test_roles_disponibles(self):
+        self.assertEqual(set(R.values), {'GERENTE', 'SUBGERENTE', 'SUPERVISOR', 'CEDI'})
 
     def test_usuario_sin_perfil_no_tiene_permisos(self):
         from django.contrib.auth.models import User
@@ -72,8 +73,9 @@ class PermisosEnVistasTests(TestCase):
             self.assertEqual(r.status_code, 403)
 
     def test_supervisor_recibe_pedidos(self):
-        from nucleo.services.pedidos import aprobar_pedido
+        from nucleo.services.pedidos import aprobar_pedido, despachar_pedido
         aprobar_pedido(self.pedido)
+        despachar_pedido(self.pedido, crear_usuario(None, R.CEDI), {}, {})
         self.client.force_login(self.supervisor)
         r = self.client.post(reverse('pedido_recibir', args=[self.pedido.pk]))
         self.assertEqual(r.status_code, 302)

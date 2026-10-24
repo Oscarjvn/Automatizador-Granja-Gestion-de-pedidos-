@@ -15,6 +15,7 @@ Matriz de permisos:
     recibir_pedido         sí        sí          sí
     ver_reportes           sí        sí          no
     exportar               sí        sí          no
+    gestionar_cedi         no        no          no       (solo Operador de CEDI)
 
 Consultar el dashboard, el inventario, la reposición, el sobrestock y los
 vencimientos está permitido a todos los roles.
@@ -33,6 +34,7 @@ PERMISOS = {
     'recibir_pedido': {R.GERENTE, R.SUBGERENTE, R.SUPERVISOR},
     'ver_reportes': {R.GERENTE, R.SUBGERENTE},
     'exportar': {R.GERENTE, R.SUBGERENTE},
+    'gestionar_cedi': {R.CEDI},
 }
 
 
