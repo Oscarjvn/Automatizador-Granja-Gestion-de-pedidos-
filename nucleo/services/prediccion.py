@@ -3,7 +3,6 @@ from datetime import date, timedelta
 
 import pandas as pd
 from django.db.models import DecimalField, ExpressionWrapper, F, Sum
-from django.db.models.functions import TruncDate
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 from nucleo.models import Ventas
@@ -40,7 +39,7 @@ def predecir_ventas(tienda, dias_historico=90, dias_prediccion=14):
     qs = (
         Ventas.todos
         .filter(tienda=tienda, fecha__gte=desde, fecha__lte=hoy)
-        .annotate(dia=TruncDate('fecha'))
+        .annotate(dia=F('fecha'))          # 'fecha' ya es una fecha: no se trunca
         .values('dia')
         .annotate(usd=Sum(INGRESO))
         .order_by('dia')

@@ -50,6 +50,8 @@ class InventarioProducto(models.Model):
         managed = True
         db_table = 'inventario_producto'
         unique_together = (('tienda', 'producto'),)
+        verbose_name = 'inventario de tienda'
+        verbose_name_plural = 'inventario de tiendas'
         base_manager_name= 'todos'
 
 class Lote(models.Model):
@@ -111,25 +113,28 @@ class Pedido(models.Model):
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.PROTECT, 
-        related_name='pedidos'
+        related_name='pedidos',
+        verbose_name='creado por',
     )
-    fecha_creacion = models.DateTimeField(auto_now_add=True) 
+    fecha_creacion = models.DateTimeField('fecha de creación', auto_now_add=True)
     estatus = models.CharField(
+        'estado',
         max_length=20,
         choices= Estado.choices,
         default= Estado.PENDIENTE
 
     )
-    fecha_aprobacion = models.DateTimeField(null=True, blank=True)
-    fecha_despacho = models.DateTimeField(null=True, blank=True)
+    fecha_aprobacion = models.DateTimeField('fecha de aprobación', null=True, blank=True)
+    fecha_despacho = models.DateTimeField('fecha de despacho', null=True, blank=True)
     despachado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='pedidos_despachados',
+        verbose_name='despachado por',
     )
-    fecha_recepcion = models.DateTimeField(null=True, blank=True)
+    fecha_recepcion = models.DateTimeField('fecha de recepción', null=True, blank=True)
 
     objects= TenantManager()
     todos= models.Manager()
@@ -137,17 +142,22 @@ class Pedido(models.Model):
         managed = True
         db_table = 'pedido'
         base_manager_name= 'todos'
+        verbose_name = 'pedido'
+        verbose_name_plural = 'pedidos'
+
+    def __str__(self):
+        return f'Pedido #{self.pk} · {self.tienda}'
 
 class DetallePedido(models.Model):
     id_detalle = models.AutoField(primary_key=True)
     pedido = models.ForeignKey(Pedido, models.CASCADE, db_column='id_pedido', related_name='detalles')
     producto = models.ForeignKey(Producto, models.PROTECT, db_column='id_producto')
-    cant_sugerida = models.IntegerField()
-    cant_ajustada = models.IntegerField(blank=True, null=True)
-    cant_despachada = models.IntegerField(blank=True, null=True)
+    cant_sugerida = models.IntegerField('sugerida')
+    cant_ajustada = models.IntegerField('ajustada', blank=True, null=True)
+    cant_despachada = models.IntegerField('despachada', blank=True, null=True)
     # Existencia que informó la API del CEDI al despachar (None = no se pudo verificar)
-    stock_cedi_al_despachar = models.IntegerField(blank=True, null=True)
-    cant_recibida = models.IntegerField(blank=True, null=True)
+    stock_cedi_al_despachar = models.IntegerField('stock del CEDI al despachar', blank=True, null=True)
+    cant_recibida = models.IntegerField('recibida', blank=True, null=True)
 
     class MotivoAjuste(models.TextChoices):
         SIN_STOCK = 'SIN_STOCK', 'Sin stock en el CEDI'
@@ -155,11 +165,16 @@ class DetallePedido(models.Model):
         DESCONTINUADO = 'DESCONTINUADO', 'Producto descontinuado'
         OTRO = 'OTRO', 'Otro motivo'
 
-    motivo_ajuste = models.CharField(max_length=20, choices=MotivoAjuste.choices, blank=True, default='')
+    motivo_ajuste = models.CharField('motivo del ajuste', max_length=20, choices=MotivoAjuste.choices, blank=True, default='')
 
     class Meta:
         managed = True
         db_table = 'detalle_pedido'
+        verbose_name = 'línea de pedido'
+        verbose_name_plural = 'líneas de pedido'
+
+    def __str__(self):
+        return f'{self.producto} · pedido #{self.pedido_id}'
 
     @property
     def cant_pedida(self):
@@ -228,7 +243,8 @@ class Ventas(models.Model):
     todos= models.Manager()
 
     class Meta: 
-        
+        verbose_name = 'venta'
+        verbose_name_plural = 'ventas'
         base_manager_name = 'todos'
         indexes = [
             models.Index(fields=['tienda', 'codigo_producto', 'fecha']),

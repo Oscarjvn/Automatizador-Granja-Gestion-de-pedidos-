@@ -144,66 +144,62 @@ LOGIN_REDIRECT_URL= "home"
 LOGOUT_REDIRECT_URL = "login"
 
 JAZZMIN_SETTINGS = {
-    # Título de la ventana del navegador
-    "site_title": "Granja Mercados Admin",
-
-    # Encabezado en la pantalla de Login y barra superior
+    "site_title": "Granja Mercados · Administración",
     "site_header": "Granja Mercados",
-
-    # Subtítulo/Marca en la barra superior
-    "site_brand": "Granja Mercados",
-
-    # Mensaje de bienvenida en la pantalla de login
-    "welcome_sign": "Bienvenido al Sistema de Gestión e Inventario",
-
-    # Derechos de autor en el pie de página
+    "site_brand": "Administración",
+    "welcome_sign": "Administración del sistema de pedidos",
     "copyright": "Granja Mercados C.A.",
 
-    
-    
-    # Logo de la empresa (debe estar en tu carpeta static, ej: static/img/logo.png)
-     "site_logo": "static/img/photo.jpg",
-     "custom_css": "css/admin_custom.css",
+    # Logo vectorial de la marca (contorno blanco, para fondo oscuro) y favicon
+    "site_logo": "img/marca/logo-granja-oscuro.svg",
+    "login_logo": "img/marca/logo-granja-oscuro.svg",
+    "site_logo_classes": "",
+    "site_icon": "img/marca/favicon.svg",
+    "custom_css": "css/admin_custom.css",
 
-    # Menú lateral colapsable estilo Dashboard profesional
+    # Volver al sistema desde el admin
+    "topmenu_links": [
+        {"name": "Ir al sistema", "url": "home"},
+    ],
+
     "show_sidebar": True,
     "navigation_expanded": True,
+    "order_with_respect_to": ["nucleo", "auth"],
+    "show_ui_builder": False,
+    "related_modal_active": False,
 
-    # Iconos para tus modelos en el menú lateral (Usa FontAwesome 5/6)
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
-        # Ejemplo para tus apps propias:
         "nucleo.Tienda": "fas fa-store",
         "nucleo.Producto": "fas fa-boxes",
+        "nucleo.InventarioProducto": "fas fa-warehouse",
         "nucleo.Pedido": "fas fa-truck-loading",
+        "nucleo.DetallePedido": "fas fa-list-ol",
+        "nucleo.Lote": "fas fa-calendar-times",
+        "nucleo.Ventas": "fas fa-receipt",
+        "nucleo.InventarioCedi": "fas fa-truck",
     },
-    "custom_links": {
-        "auth": [{
-            "name": "Cerrar Sesión", 
-            "url": "admin:logout", 
-            "icon": "fas fa-sign-out-alt",
-            "permissions": ["auth.view_user"]
-        }],
-    },
-    
-   
+    "default_icon_children": "fas fa-circle",
 }
 
 JAZZMIN_UI_TWEAKS = {
-    "navbar": "navbar-primary navbar-dark",       # Barra superior azul
-    "theme": "flatly",                             # Tema limpio de Bootstrap
-    "sidebar": "sidebar-dark-primary",            # Menú lateral oscuro con acentos azules
-    "accent": "accent-primary",
+    "navbar": "navbar-white navbar-light",
+    "theme": "default",
+    "sidebar": "sidebar-dark-warning",
+    "accent": "accent-warning",
+    "brand_colour": False,
+    "sidebar_nav_flat_style": True,
+    "sidebar_nav_child_indent": True,
     "button_classes": {
         "primary": "btn-primary",
         "secondary": "btn-outline-secondary",
-        "info": "btn-info",
+        "info": "btn-outline-primary",
         "warning": "btn-warning",
         "danger": "btn-danger",
-        "success": "btn-success"
-    }
+        "success": "btn-primary",
+    },
 }
 
 # --- Configuración de sincronización de ventas ---

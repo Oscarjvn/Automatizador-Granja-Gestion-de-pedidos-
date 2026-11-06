@@ -145,3 +145,20 @@ class AccesoYSobrestockVistasTests(TestCase):
         self.assertEqual(self.client.get('/accounts/singup/').status_code, 404)
         r = self.client.get(reverse('login'))
         self.assertNotContains(r, 'Sign Up')
+
+
+class AdminTests(TestCase):
+    def test_el_estado_del_pedido_no_se_edita_desde_el_admin(self):
+        from django.contrib import admin as dj_admin
+        from nucleo.models import Pedido as P
+        self.assertIn('estatus', dj_admin.site._registry[P].readonly_fields)
+
+    def test_las_pantallas_del_admin_responden(self):
+        from django.contrib.auth.models import User
+        su = User.objects.create_superuser('raiz', 'r@example.com', 'x')
+        self.client.force_login(su)
+        for url in ('/admin/', '/admin/nucleo/pedido/', '/admin/nucleo/producto/', '/admin/nucleo/ventas/',
+                    '/admin/nucleo/lote/', '/admin/nucleo/detallepedido/', '/admin/nucleo/inventariocedi/',
+                    '/admin/auth/user/'):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 200)

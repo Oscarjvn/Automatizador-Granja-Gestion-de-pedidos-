@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db.models import Count, Sum, F, DecimalField, ExpressionWrapper
-from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, ExtractHour, ExtractWeekDay
+from django.db.models.functions import TruncWeek, TruncMonth, ExtractHour, ExtractWeekDay
 
 from nucleo.models import Ventas
 
@@ -46,7 +46,7 @@ def serie_diaria(tienda, desde, hasta):
     """Ventas por día."""
     qs = (
         _base_qs(tienda, desde, hasta)
-        .annotate(dia=TruncDate('fecha'))
+        .annotate(dia=F('fecha'))          # 'fecha' ya es una fecha: no se trunca
         .values('dia')
         .annotate(
             usd=Sum(INGRESO),
