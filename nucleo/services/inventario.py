@@ -16,7 +16,7 @@ def listar_inventario(
     """
     Lista el inventario de una tienda con filtros y paginación.
 
-    estado: 'criticos' | 'reponer' | 'ok' | None (todos)
+    estado: 'criticos' | 'reponer' | 'sobrestock' | 'ok' | None (todos)
     orden:  '-stock' | 'stock' | 'nombre' | '-ddp' | '-rop'
     """
     # Base: todos los InventarioProducto de la tienda con su análisis
@@ -43,6 +43,11 @@ def listar_inventario(
         qs = qs.filter(
             analisis_reposicion__promedio_venta_diario__gt=0,
             stock_actual__lte=F('analisis_reposicion__reorder_point'),
+        )
+    elif estado == 'sobrestock':
+        qs = qs.filter(
+            analisis_reposicion__promedio_venta_diario__gt=0,
+            stock_actual__gt=F('analisis_reposicion__stock_maximo'),
         )
     elif estado == 'ok':
         qs = qs.filter(
@@ -89,6 +94,7 @@ def listar_inventario(
             'stock_maximo': float(a.stock_maximo) if a else 0,
             'es_critico': a.es_critico if a else False,
             'necesita_reposicion': a.necesita_reposicion if a else False,
+            'tiene_sobrestock': a.tiene_sobrestock if a else False,
         })
 
     return {

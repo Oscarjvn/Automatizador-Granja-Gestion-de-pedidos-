@@ -1,8 +1,10 @@
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.views.generic import DetailView, TemplateView, ListView
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from nucleo.mixin import TiendaRequeridaMixin
+from nucleo.permisos import tiene_permiso
 from nucleo.models import Pedido, Producto
 from nucleo.services.pedidos import generar_pedido_sugerido
 from nucleo.services.reposicion import (productos_a_reponer, listar_cuadrantes, productos_a_reponer_de_cuadrante)
@@ -18,13 +20,12 @@ class ReposicionView(TiendaRequeridaMixin, TemplateView):
         ctx = super().get_context_data(**kwargs)
         productos_reposicion = productos_a_reponer(tienda=self.tienda)
         paginator= Paginator(productos_reposicion, self.paginate_by)
-        print(type(paginator), paginator)
         page_obj= paginator.get_page(self.request.GET.get('page'))
 
         ctx['page_obj'] = page_obj
         ctx['candidatos'] = page_obj.object_list
         ctx['is_paginated'] = page_obj.has_other_pages()
-        ctx['cuadrantes']= listar_cuadrantes()
+        ctx['cuadrantes']= listar_cuadrantes(tienda=self.tienda)
         
         # ¿Hay un cuadrante seleccionado?
         cuadrante = self.request.GET.get('cuadrante', '').strip()
@@ -49,6 +50,9 @@ class ReposicionView(TiendaRequeridaMixin, TemplateView):
    
 
     def post(self, request, *args, **kwargs):
+        if not tiene_permiso(request.user, 'generar_pedido'):
+            raise PermissionDenied("Su rol no tiene permiso para generar pedidos.")
+
         cuadrante = request.POST.get('cuadrante', '').strip()
         items = self._parse_items(request.POST)
 

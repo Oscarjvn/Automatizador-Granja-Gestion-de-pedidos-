@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 
-from nucleo.mixin import TiendaRequeridaMixin
+from nucleo.permisos import PermisoRequeridoMixin
 from nucleo.models import Pedido
 from nucleo.services.pedidos import (
     EstadoInvalido,
@@ -18,7 +18,9 @@ from nucleo.services.pedidos import (
 PATRON_LOTE = re.compile(r'^lote_cantidad_(\d+)_(\d+)$')
 
 
-class PedidoAprobarView(TiendaRequeridaMixin, View):
+class PedidoAprobarView(PermisoRequeridoMixin, View):
+    permiso_requerido = 'aprobar_pedido'
+
     def post(self, request, pk):
         pedido = get_object_or_404(Pedido.todos.filter(tienda=self.tienda), pk=pk)
         try:
@@ -29,7 +31,9 @@ class PedidoAprobarView(TiendaRequeridaMixin, View):
         return redirect('pedido_detalle', pk=pk)
 
 
-class PedidoCancelarView(TiendaRequeridaMixin, View):
+class PedidoCancelarView(PermisoRequeridoMixin, View):
+    permiso_requerido = 'cancelar_pedido'
+
     def post(self, request, pk):
         pedido = get_object_or_404(Pedido.todos.filter(tienda=self.tienda), pk=pk)
         try:
@@ -40,7 +44,9 @@ class PedidoCancelarView(TiendaRequeridaMixin, View):
         return redirect('pedido_detalle', pk=pk)
 
 
-class PedidoRecibirView(TiendaRequeridaMixin, View):
+class PedidoRecibirView(PermisoRequeridoMixin, View):
+    permiso_requerido = 'recibir_pedido'
+
     def post(self, request, pk):
         pedido = get_object_or_404(Pedido.todos.filter(tienda=self.tienda), pk=pk)
 

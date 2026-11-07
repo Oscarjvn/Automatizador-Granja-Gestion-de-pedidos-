@@ -27,7 +27,6 @@ urlpatterns = [
     #rutas de autenticacion e ingreso
     path("accounts/", include("django.contrib.auth.urls")), #ruta de login original,
     path("", include("django.contrib.auth.urls")),
-    path("accounts/", include("accounts.urls")),
     path("", RedirectView.as_view(url='/login/', permanent=False)),
 
     #rutas de nucleo

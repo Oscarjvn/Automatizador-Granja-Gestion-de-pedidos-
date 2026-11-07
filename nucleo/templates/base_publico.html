@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Granja Mercados{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/marca/favicon.svg' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/granja.css' %}">
+</head>
+<body>
+    <main class="granja-publico">
+        <img src="{% static 'img/marca/logo-granja-oscuro.svg' %}" alt="Granja Mercados" class="granja-logo">
+        <div class="granja-publico-tarjeta">
+            {% block content %}{% endblock %}
+        </div>
+        <div class="granja-publico-pie">{% block pie %}Sistema de pedidos de reposición{% endblock %}</div>
+    </main>
+</body>
+</html>

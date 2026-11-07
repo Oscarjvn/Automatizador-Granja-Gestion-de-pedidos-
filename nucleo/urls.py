@@ -16,6 +16,9 @@ from .views.LogoutView import LogoutView
 from django.contrib.auth import views as auth_views
 from .views.exportar_view import ExportarPedidoView, ExportarListaPedidosView
 from .views.prediccion_view import PrediccionView
+from .views.prediccion_productos_view import PrediccionProductosView
+from .views.sobrestock_view import SobrestockView
+from .views.cedi_view import CediPanelView, CediPedidoView
 
 
 
@@ -50,7 +53,11 @@ urlpatterns= [
     path('pedidos/<int:pk>/exportar/', ExportarPedidoView.as_view(), name='exportar_pedido'),
     path('pedidos/exportar/', ExportarListaPedidosView.as_view(), name='exportar_lista_pedidos'),
     path('vencimientos/', VencimientosView.as_view(), name='vencimientos'),
+    path('sobrestock/', SobrestockView.as_view(), name='sobrestock'),
+    path('cedi/', CediPanelView.as_view(), name='cedi_panel'),
+    path('cedi/pedidos/<int:pk>/', CediPedidoView.as_view(), name='cedi_pedido'),
     path('reportes/prediccion/', PrediccionView.as_view(), name='reportes_prediccion'),
+    path('reportes/prediccion/productos/', PrediccionProductosView.as_view(), name='reportes_prediccion_productos'),
     
 ]
 

@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 from django.views.generic import TemplateView
 
-from nucleo.mixin import TiendaRequeridaMixin
+from nucleo.permisos import PermisoRequeridoMixin
 from nucleo.services.reportes.comparativa import (
     comparar_periodos,
     variacion_por_cuadrante,
@@ -19,7 +19,9 @@ def _parse_fecha(s, default):
         return default
 
 
-class ComparativaView(TiendaRequeridaMixin, TemplateView):
+class ComparativaView(PermisoRequeridoMixin, TemplateView):
+    permiso_requerido = 'ver_reportes'
+
     template_name = 'reportes/comparativa.html'
 
     def get_context_data(self, **kwargs):

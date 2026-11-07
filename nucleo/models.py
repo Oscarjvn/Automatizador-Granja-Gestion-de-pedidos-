@@ -50,6 +50,8 @@ class InventarioProducto(models.Model):
         managed = True
         db_table = 'inventario_producto'
         unique_together = (('tienda', 'producto'),)
+        verbose_name = 'inventario de tienda'
+        verbose_name_plural = 'inventario de tiendas'
         base_manager_name= 'todos'
 
 class Lote(models.Model):
@@ -101,6 +103,8 @@ class Pedido(models.Model):
         PENDIENTE= 'PE', 'Pendiente'
         CANCELADO= 'CA', 'Cancelado'
         APROBADO= 'AP', 'Aprobado'
+        DESPACHADO = 'DE', 'Despachado'
+        RECHAZADO = 'RC', 'Rechazado por CEDI'
         RECIBIDO= 'RE',  'Recibido'
 
     
@@ -109,17 +113,28 @@ class Pedido(models.Model):
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.PROTECT, 
-        related_name='pedidos'
+        related_name='pedidos',
+        verbose_name='creado por',
     )
-    fecha_creacion = models.DateTimeField(auto_now_add=True) 
+    fecha_creacion = models.DateTimeField('fecha de creación', auto_now_add=True)
     estatus = models.CharField(
+        'estado',
         max_length=20,
         choices= Estado.choices,
         default= Estado.PENDIENTE
 
     )
-    fecha_aprobacion = models.DateTimeField(null=True, blank=True)
-    fecha_recepcion = models.DateTimeField(null=True, blank=True)
+    fecha_aprobacion = models.DateTimeField('fecha de aprobación', null=True, blank=True)
+    fecha_despacho = models.DateTimeField('fecha de despacho', null=True, blank=True)
+    despachado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pedidos_despachados',
+        verbose_name='despachado por',
+    )
+    fecha_recepcion = models.DateTimeField('fecha de recepción', null=True, blank=True)
 
     objects= TenantManager()
     todos= models.Manager()
@@ -127,29 +142,89 @@ class Pedido(models.Model):
         managed = True
         db_table = 'pedido'
         base_manager_name= 'todos'
+        verbose_name = 'pedido'
+        verbose_name_plural = 'pedidos'
+
+    def __str__(self):
+        return f'Pedido #{self.pk} · {self.tienda}'
 
 class DetallePedido(models.Model):
     id_detalle = models.AutoField(primary_key=True)
     pedido = models.ForeignKey(Pedido, models.CASCADE, db_column='id_pedido', related_name='detalles')
     producto = models.ForeignKey(Producto, models.PROTECT, db_column='id_producto')
-    cant_sugerida = models.IntegerField()
-    cant_ajustada = models.IntegerField(blank=True, null=True)
-    cant_recibida = models.IntegerField(blank=True, null=True)
+    cant_sugerida = models.IntegerField('sugerida')
+    cant_ajustada = models.IntegerField('ajustada', blank=True, null=True)
+    cant_despachada = models.IntegerField('despachada', blank=True, null=True)
+    # Existencia que informó la API del CEDI al despachar (None = no se pudo verificar)
+    stock_cedi_al_despachar = models.IntegerField('stock del CEDI al despachar', blank=True, null=True)
+    cant_recibida = models.IntegerField('recibida', blank=True, null=True)
+
+    class MotivoAjuste(models.TextChoices):
+        SIN_STOCK = 'SIN_STOCK', 'Sin stock en el CEDI'
+        STOCK_PARCIAL = 'STOCK_PARCIAL', 'Stock parcial'
+        DESCONTINUADO = 'DESCONTINUADO', 'Producto descontinuado'
+        OTRO = 'OTRO', 'Otro motivo'
+
+    motivo_ajuste = models.CharField('motivo del ajuste', max_length=20, choices=MotivoAjuste.choices, blank=True, default='')
 
     class Meta:
         managed = True
         db_table = 'detalle_pedido'
+        verbose_name = 'línea de pedido'
+        verbose_name_plural = 'líneas de pedido'
+
+    def __str__(self):
+        return f'{self.producto} · pedido #{self.pedido_id}'
+
+    @property
+    def cant_pedida(self):
+        """Lo que la tienda pidió finalmente: la cantidad ajustada o, si no hay, la sugerida."""
+        return self.cant_ajustada if self.cant_ajustada is not None else self.cant_sugerida
+
+    @property
+    def diferencia_despacho(self):
+        """Unidades que el CEDI dejó de enviar respecto a lo pedido."""
+        if self.cant_despachada is None:
+            return None
+        return self.cant_pedida - self.cant_despachada
+
+    @property
+    def diferencia_recepcion(self):
+        """Unidades que llegaron de menos (o de más, si es negativo) respecto a lo despachado."""
+        if self.cant_despachada is None or self.cant_recibida is None:
+            return None
+        return self.cant_despachada - self.cant_recibida
 
 class Usuario(models.Model):
+    """Perfil del usuario: tienda a la que pertenece y rol que ocupa en ella."""
+
+    class Rol(models.TextChoices):
+        GERENTE = 'GERENTE', 'Gerente de tienda'
+        SUBGERENTE = 'SUBGERENTE', 'Subgerente'
+        SUPERVISOR = 'SUPERVISOR', 'Supervisor'
+        CEDI = 'CEDI', 'Operador de CEDI'
+
     usuario= models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    tienda= models.ForeignKey('Tienda', on_delete=models.CASCADE, db_column='id_tienda')
-    rol = models.CharField(max_length=20)
+    # El operador de CEDI no pertenece a una tienda: atiende los pedidos de todas
+    tienda= models.ForeignKey('Tienda', on_delete=models.CASCADE, db_column='id_tienda', null=True, blank=True)
+    rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.SUPERVISOR)
 
     class Meta:
         db_table = 'usuario'
     
+    @property
+    def es_cedi(self):
+        return self.rol == self.Rol.CEDI
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.es_cedi and self.tienda_id:
+            raise ValidationError({'tienda': 'El operador de CEDI no se asigna a una tienda.'})
+        if not self.es_cedi and not self.tienda_id:
+            raise ValidationError({'tienda': 'Los usuarios de tienda deben tener una tienda asignada.'})
+
     def __str__(self):
-        return self.usuario.username
+        return f"{self.usuario.username} ({self.get_rol_display()})"
 
 
 class Ventas(models.Model):
@@ -168,7 +243,8 @@ class Ventas(models.Model):
     todos= models.Manager()
 
     class Meta: 
-        
+        verbose_name = 'venta'
+        verbose_name_plural = 'ventas'
         base_manager_name = 'todos'
         indexes = [
             models.Index(fields=['tienda', 'codigo_producto', 'fecha']),
@@ -176,7 +252,7 @@ class Ventas(models.Model):
         ]
 
     def __str__(self):
-        return f"Factura N° {self.numero_factura} - {self.fecha} - {self.hora} - {self.codigo_productoç}"
+        return f"Factura N° {self.numero_factura} - {self.fecha} - {self.hora} - {self.codigo_producto_id}"
 
 
 
@@ -272,9 +348,57 @@ class AnalisisReposicion(models.Model):
         return float(self.inventario.stock_actual) <= float(self.stock_seguridad)
 
     @property
+    def tiene_sobrestock(self):
+        """
+        ¿El stock actual supera el stock máximo calculado?
+        Solo aplica a productos con ventas (DDP > 0); los productos sin
+        ventas se reportan aparte como "sin movimiento".
+        """
+        return (
+            float(self.promedio_venta_diario) > 0
+            and float(self.inventario.stock_actual) > float(self.stock_maximo)
+        )
+
+    @property
+    def exceso_unidades(self):
+        """Unidades por encima del stock máximo (0 si no hay sobrestock)."""
+        if not self.tiene_sobrestock:
+            return 0
+        return int(round(float(self.inventario.stock_actual) - float(self.stock_maximo)))
+
+    @property
+    def dias_cobertura(self):
+        """Días que alcanza el stock actual al ritmo de venta promedio."""
+        ddp = float(self.promedio_venta_diario)
+        if ddp <= 0:
+            return None
+        return round(float(self.inventario.stock_actual) / ddp, 1)
+
+    @property
     def cantidad_sugerida(self):
         """Cuánto pedir para llegar al stock máximo."""
         if not self.necesita_reposicion:
             return 0
         faltante = float(self.stock_maximo) - float(self.inventario.stock_actual)
         return max(int(round(faltante)), 0)
+
+
+class InventarioCedi(models.Model):
+    """
+    Existencias del CEDI para la fuente LOCAL de inventario (demostración y pruebas).
+
+    En producción el inventario del CEDI vive en su propio sistema y se consulta
+    por API (CEDI_INVENTARIO_FUENTE=api); esta tabla no se usa en ese modo.
+    No es una tienda: no tiene ventas, reposición ni usuarios.
+    """
+    producto = models.OneToOneField('Producto', on_delete=models.CASCADE, related_name='inventario_cedi')
+    disponible = models.PositiveIntegerField(default=0)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'inventario_cedi'
+        verbose_name = 'inventario del CEDI'
+        verbose_name_plural = 'inventario del CEDI'
+
+    def __str__(self):
+        return f"{self.producto.sku} · {self.disponible} u."

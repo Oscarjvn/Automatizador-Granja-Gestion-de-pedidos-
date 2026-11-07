@@ -13,6 +13,7 @@
         </div>
         <div class="col-auto ms-auto d-print-none">
             <form method="get" class="d-flex gap-2">
+                <a href="{% url 'reportes_prediccion_productos' %}" class="btn btn-outline-primary text-nowrap">Top 20 productos</a>
                 <select name="dias" class="form-select" onchange="this.form.submit()">
                     <option value="7" {% if dias_prediccion == 7 %}selected{% endif %}>7 días</option>
                     <option value="14" {% if dias_prediccion == 14 %}selected{% endif %}>14 días</option>

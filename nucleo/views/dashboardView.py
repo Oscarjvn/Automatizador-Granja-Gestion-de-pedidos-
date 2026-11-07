@@ -37,6 +37,12 @@ class HomePage(TiendaRequeridaMixin, TemplateView):
             inventario__stock_actual__lte=F('reorder_point'),
         ).count()
 
+        ctx['total_sobrestock'] = AnalisisReposicion.objects.filter(
+            inventario__tienda=tienda,
+            promedio_venta_diario__gt=0,
+            inventario__stock_actual__gt=F('stock_maximo'),
+        ).count()
+
         ctx['lotes_por_vencer'] = Lote.todos.filter(
             tienda=tienda,
             fecha_vencimiento__gte=hoy,
@@ -51,6 +57,11 @@ class HomePage(TiendaRequeridaMixin, TemplateView):
         ctx['pedidos_aprobados'] = Pedido.todos.filter(
             tienda=tienda,
             estatus=Pedido.Estado.APROBADO,
+        ).count()
+
+        ctx['pedidos_en_transito'] = Pedido.todos.filter(
+            tienda=tienda,
+            estatus=Pedido.Estado.DESPACHADO,
         ).count()
 
         # --- Top 10 productos por demanda diaria ---

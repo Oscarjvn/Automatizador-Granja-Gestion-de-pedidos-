@@ -17,7 +17,7 @@
 
 <!-- KPIs principales -->
 <div class="row row-deck row-cards mt-3">
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg">
         <div class="card">
             <div class="card-body">
                 <div class="d-flex align-items-center">
@@ -31,7 +31,7 @@
         </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg">
         <div class="card">
             <div class="card-body">
                 <div class="subheader">🔴 Críticos</div>
@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg">
         <div class="card">
             <div class="card-body">
                 <div class="subheader">🟡 A reponer</div>
@@ -55,7 +55,21 @@
         </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg">
+        <div class="card">
+            <div class="card-body">
+                <div class="subheader">🔵 Sobrestock</div>
+                <div class="d-flex align-items-baseline">
+                    <div class="h1 mb-0 me-2 text-azure">
+                        <a href="{% url 'sobrestock' %}" class="text-reset">{{ total_sobrestock }}</a>
+                    </div>
+                    <div class="text-muted">productos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg">
         <div class="card">
             <div class="card-body">
                 <div class="subheader">📅 Por vencer (7d)</div>
@@ -77,13 +91,17 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-6">
-                        <div class="text-muted">Pendientes</div>
+                    <div class="col-4">
+                        <div class="text-muted">Por aprobar</div>
                         <div class="h2 mb-0 text-warning">{{ pedidos_pendientes }}</div>
                     </div>
-                    <div class="col-6">
-                        <div class="text-muted">Aprobados</div>
-                        <div class="h2 mb-0 text-info">{{ pedidos_aprobados }}</div>
+                    <div class="col-4">
+                        <div class="text-muted">En el CEDI</div>
+                        <div class="h2 mb-0">{{ pedidos_aprobados }}</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted">En tránsito</div>
+                        <div class="h2 mb-0 text-azure">{{ pedidos_en_transito }}</div>
                     </div>
                 </div>
                 <a href="{% url 'pedidos' %}" class="btn btn-outline-primary mt-3 w-100">
