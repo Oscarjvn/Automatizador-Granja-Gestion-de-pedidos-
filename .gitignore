@@ -14,5 +14,5 @@ logs/
 .env
 .env.local
 .env.*.local
-.patch
+*.patch
 .vscode
