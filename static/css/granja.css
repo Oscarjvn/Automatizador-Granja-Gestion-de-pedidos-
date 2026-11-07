@@ -243,3 +243,14 @@ h1, h2, h3,
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
 }
+
+/* ---------- Distintivos (badges) legibles ----------
+   Desde Bootstrap 5.3, .bg-* solo pinta el fondo y no ajusta el texto:
+   sin esta regla, el número de un distintivo rojo quedaba en rojo sobre rojo. */
+.badge.bg-danger, .badge.bg-red, .badge.bg-success, .badge.bg-green,
+.badge.bg-info, .badge.bg-azure, .badge.bg-blue, .badge.bg-secondary, .badge.bg-dark {
+    color: #fff;
+}
+.badge.bg-primary, .badge.bg-warning, .badge.bg-yellow {
+    color: var(--granja-berenjena);
+}
