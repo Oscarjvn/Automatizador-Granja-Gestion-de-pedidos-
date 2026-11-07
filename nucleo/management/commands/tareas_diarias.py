@@ -15,9 +15,8 @@ Garantías:
   que haya es mejor que no recalcular), pero el comando termina con código 1
   para que el programador de tareas registre la falla.
 - Un candado impide que dos ejecuciones corran a la vez (por ejemplo, si la
-  de ayer se quedó colgada).
+  de ayer se quedó colgada). Funciona en Linux, macOS y Windows.
 """
-import fcntl
 import time
 from io import StringIO
 from pathlib import Path
@@ -25,6 +24,8 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
+
+from nucleo.candado import Candado, CandadoOcupado
 
 PASOS = [
     ('Sincronizar ventas', 'sincronizar_ventas'),
@@ -45,35 +46,32 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         carpeta = Path(getattr(settings, 'BASE_DIR', '.')) / 'logs'
         carpeta.mkdir(exist_ok=True)
-        candado = open(carpeta / 'tareas_diarias.lock', 'w')
         try:
-            fcntl.flock(candado, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
+            with Candado(carpeta / 'tareas_diarias.lock'):
+                self.ejecutar_pasos(options)
+        except CandadoOcupado:
             raise CommandError('Ya hay una ejecución de tareas_diarias en curso.')
 
-        try:
-            fallidos = []
-            for nombre, comando in PASOS:
-                if comando == 'sincronizar_ventas' and options['sin_sincronizar']:
-                    self.stdout.write(f'· {nombre}: omitido')
-                    continue
-                inicio = time.monotonic()
-                salida = StringIO()
-                try:
-                    call_command(comando, stdout=salida, stderr=salida)
-                    self.stdout.write(self.style.SUCCESS(
-                        f'✓ {nombre} ({time.monotonic() - inicio:.1f} s)'))
-                except BaseException as e:   # SystemExit incluido: un paso no debe tumbar a los demás
-                    if isinstance(e, KeyboardInterrupt):
-                        raise
-                    fallidos.append(nombre)
-                    self.stdout.write(self.style.ERROR(f'✗ {nombre}: {e}'))
-                if salida.getvalue().strip():
-                    self.stdout.write(salida.getvalue().rstrip())
+    def ejecutar_pasos(self, options):
+        fallidos = []
+        for nombre, comando in PASOS:
+            if comando == 'sincronizar_ventas' and options['sin_sincronizar']:
+                self.stdout.write(f'· {nombre}: omitido')
+                continue
+            inicio = time.monotonic()
+            salida = StringIO()
+            try:
+                call_command(comando, stdout=salida, stderr=salida)
+                self.stdout.write(self.style.SUCCESS(
+                    f'✓ {nombre} ({time.monotonic() - inicio:.1f} s)'))
+            except BaseException as e:   # SystemExit incluido: un paso no debe tumbar a los demás
+                if isinstance(e, KeyboardInterrupt):
+                    raise
+                fallidos.append(nombre)
+                self.stdout.write(self.style.ERROR(f'✗ {nombre}: {e}'))
+            if salida.getvalue().strip():
+                self.stdout.write(salida.getvalue().rstrip())
 
-            if fallidos:
-                raise CommandError(f"Pasos con error: {', '.join(fallidos)}")
-            self.stdout.write(self.style.SUCCESS('Tareas diarias completadas.'))
-        finally:
-            fcntl.flock(candado, fcntl.LOCK_UN)
-            candado.close()
+        if fallidos:
+            raise CommandError(f"Pasos con error: {', '.join(fallidos)}")
+        self.stdout.write(self.style.SUCCESS('Tareas diarias completadas.'))
