@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 from pathlib import Path
+from urllib.parse import urlparse, unquote
 from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -32,6 +33,9 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+# Detrás del proxy HTTPS de Render, Django debe saber que la conexión original era segura
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -50,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',      # sirve los estilos y el logo en producción
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -83,16 +88,34 @@ WSGI_APPLICATION = 'configuraciones.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+# Base de datos: en producción (Render) llega como una sola URL en DATABASE_URL;
+# en el equipo de desarrollo se usan las variables DB_* del archivo .env.
+DATABASE_URL = config('DATABASE_URL', default='')
+if DATABASE_URL:
+    _url = urlparse(DATABASE_URL)
+    if _url.scheme.startswith('sqlite'):
+        DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': _url.path[1:] or BASE_DIR / 'db.sqlite3'}}
+    else:
+        DATABASES = {'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': _url.path.lstrip('/'),
+            'USER': unquote(_url.username or ''),
+            'PASSWORD': unquote(_url.password or ''),
+            'HOST': _url.hostname,
+            'PORT': str(_url.port or 5432),
+            'CONN_MAX_AGE': 600,
+        }}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
     }
-}
 
 
 # Password validation
@@ -130,6 +153,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'           # collectstatic reúne aquí los archivos para producción
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
 # La barra de depuración solo se carga en desarrollo (DEBUG=True en .env)
 if DEBUG:
     INSTALLED_APPS += ["debug_toolbar"]
@@ -242,7 +270,10 @@ LOGGING = {
 }
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
+# Sin clave de SendGrid (por ejemplo, en la demostración), los correos se muestran en la consola
+EMAIL_BACKEND = ('django.core.mail.backends.smtp.EmailBackend' if SENDGRID_API_KEY
+                 else 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 465
 EMAIL_USE_SSL = True
@@ -250,8 +281,8 @@ EMAIL_USE_TLS = False
 
 EMAIL_HOST_USER = 'apikey'
 
-EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-responder@granjamercados.local')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 24

@@ -1,0 +1,31 @@
+# Despliegue en Render (https://render.com): aplicación web + base de datos PostgreSQL
+databases:
+  - name: granja-db
+    plan: free
+    databaseName: granja
+    user: granja
+
+services:
+  - type: web
+    name: granja-pedidos
+    runtime: python
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: gunicorn configuraciones.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATABASE_URL
+        fromDatabase:
+          name: granja-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com"
+      - key: CEDI_INVENTARIO_FUENTE
+        value: local

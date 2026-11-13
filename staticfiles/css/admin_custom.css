@@ -1,0 +1,85 @@
+/* ==========================================================================
+   Admin (Jazzmin) con la identidad de Granja Mercados.
+   Mismos colores que static/css/granja.css, para que el admin y el sistema
+   se vean como una sola aplicación.
+   ========================================================================== */
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
+
+:root {
+    --granja-berenjena: #1A1423;
+    --granja-amarillo: #FAB803;
+    --granja-amarillo-hover: #E5A800;
+    --granja-rojo: #E31E24;
+    --granja-azul: #2B4FA8;
+    --granja-magenta: #E6267A;
+    --granja-lienzo: #F5F4F7;
+    --granja-linea: #E6E2EC;
+}
+
+body, .content-wrapper, .main-footer, .main-header, .brand-link, .nav-sidebar {
+    font-family: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+.content-wrapper, .app-main, .app-content { background: var(--granja-lienzo) !important; }
+a { color: var(--granja-azul); }
+
+/* ---------- Barra lateral ---------- */
+.main-sidebar, .main-sidebar .brand-link,
+.app-sidebar, .app-sidebar .sidebar-brand, .app-sidebar .sidebar-wrapper { background: var(--granja-berenjena) !important; }
+.main-sidebar .brand-link, .app-sidebar .sidebar-brand {
+    display: flex; align-items: center; gap: .5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, .08) !important;
+    padding: .9rem .75rem;
+}
+.brand-link .brand-image {
+    float: none !important; margin: 0 !important; box-shadow: none !important;
+    max-height: 40px !important; width: auto !important; opacity: 1 !important;
+}
+.brand-link .brand-text { color: rgba(255, 255, 255, .75) !important; font-weight: 700 !important; font-size: .95rem; }
+.sidebar .nav-link, .app-sidebar .nav-link { color: rgba(255, 255, 255, .72) !important; border-left: 3px solid transparent; border-radius: 0 !important; }
+.sidebar .nav-link:hover, .app-sidebar .nav-link:hover { color: #fff !important; background: rgba(255, 255, 255, .06) !important; }
+.sidebar .nav-link.active, .sidebar .nav-item.menu-open > .nav-link,
+.app-sidebar .nav-link.active {
+    color: var(--granja-amarillo) !important; background: rgba(250, 184, 3, .10) !important;
+    border-left-color: var(--granja-amarillo); box-shadow: none !important;
+}
+.sidebar .nav-link.active .nav-icon, .app-sidebar .nav-link.active .nav-icon { color: var(--granja-amarillo) !important; }
+.sidebar .nav-header, .app-sidebar .nav-header { color: rgba(255, 255, 255, .45) !important; font-weight: 700; }
+.user-panel .info a, .app-sidebar .user-panel a { color: rgba(255, 255, 255, .8) !important; }
+
+/* ---------- Barra superior con la franja de colores del logo ---------- */
+.main-header, .app-header { position: relative; border-bottom: 0 !important; }
+.main-header::after, .app-header::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+    background: linear-gradient(90deg, var(--granja-rojo) 0 25%, var(--granja-azul) 25% 50%,
+                var(--granja-amarillo) 50% 75%, var(--granja-magenta) 75% 100%);
+}
+
+/* ---------- Botones, tarjetas y tablas ---------- */
+.btn-primary, .btn-success {
+    background: var(--granja-amarillo) !important; border-color: var(--granja-amarillo) !important;
+    color: var(--granja-berenjena) !important; font-weight: 700;
+}
+.btn-primary:hover, .btn-success:hover { background: var(--granja-amarillo-hover) !important; border-color: var(--granja-amarillo-hover) !important; }
+.btn-outline-primary { color: var(--granja-berenjena) !important; border-color: var(--granja-amarillo) !important; }
+.btn-outline-primary:hover { background: var(--granja-amarillo) !important; }
+.card { border-radius: 12px; border: 1px solid var(--granja-linea); box-shadow: none; }
+.card-primary.card-outline, .card-warning.card-outline { border-top: 3px solid var(--granja-amarillo) !important; }
+.table thead th { background: #FAF9FB; color: #6B6475; font-weight: 700; border-bottom-width: 1px; }
+.page-item.active .page-link { background: var(--granja-amarillo); border-color: var(--granja-amarillo); color: var(--granja-berenjena); }
+.form-control:focus, .custom-select:focus, .select2-container--focus .select2-selection {
+    border-color: var(--granja-amarillo) !important; box-shadow: 0 0 0 .2rem rgba(250, 184, 3, .30) !important;
+}
+h1, .content-header h1 { font-weight: 800; color: var(--granja-berenjena); }
+
+/* ---------- Pantalla de inicio de sesión del admin ---------- */
+body.login-page { background: var(--granja-berenjena) !important; }
+.login-page .login-logo img, .login-logo img {
+    max-height: 110px !important; width: auto !important; display: block; margin: 0 auto 1rem;
+}
+.login-page .login-logo a, .login-page .login-logo { color: #fff !important; }
+.login-page .card { border-radius: 16px; border: 0; }
+.login-page .login-box-msg { color: #6B6475; }
+/* Jazzmin incluye el logo en versión clara y oscura: solo se muestra la del tema activo */
+.login-logo .logo-dark { display: none !important; }
+[data-bs-theme="dark"] .login-logo .logo-dark { display: block !important; }
+[data-bs-theme="dark"] .login-logo .logo-light { display: none !important; }
