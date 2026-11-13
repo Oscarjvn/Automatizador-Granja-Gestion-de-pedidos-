@@ -1,4 +1,4 @@
-<#
+﻿<#
   Construye el paquete portátil del sistema para entregarlo en el pendrive.
 
   El paquete funciona en cualquier Windows de 64 bits sin instalar nada:
@@ -14,6 +14,12 @@ param(
     [string]$VersionPython = "3.12.8"
 )
 $ErrorActionPreference = "Stop"
+# PowerShell 5.1 usa por defecto un protocolo antiguo que python.org rechaza
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# La barra de progreso hace las descargas muchísimo más lentas en PowerShell 5.1
+$ProgressPreference = "SilentlyContinue"
+# Python en modo UTF-8: así los acentos y las eñes de los datos no se dañan
+$env:PYTHONUTF8 = "1"
 $proyecto = Split-Path -Parent $PSScriptRoot
 $py = "$Destino\python\python.exe"
 
@@ -52,6 +58,8 @@ Push-Location "$Destino\app"
 & $py manage.py loaddata "$Destino\datos\datos_granja.json"
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Falló la importación de datos" }
 & $py manage.py collectstatic --no-input
+Write-Host "   Verificando que los datos llegaron completos"
+& $py manage.py shell -c "from django.contrib.auth.models import User; from nucleo.models import Tienda, Producto, Ventas, Pedido; print('   Usuarios:', User.objects.count(), '| Tiendas:', Tienda.objects.count(), '| Productos:', Producto.objects.count(), '| Ventas:', Ventas.todos.count(), '| Pedidos:', Pedido.todos.count())"
 Pop-Location
 Remove-Item Env:DATABASE_URL, Env:SECRET_KEY, Env:DEBUG
 Remove-Item "$Destino\datos\datos_granja.json"
