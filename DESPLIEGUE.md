@@ -1,4 +1,18 @@
-# Despliegue del sistema en Render
+# Entrega del sistema
+
+## Opción usada en la entrega: paquete portátil para Windows
+
+`empaquetar/preparar_paquete.ps1` construye una carpeta `Sistema_Granja` que funciona en cualquier
+Windows de 64 bits sin instalar nada: trae su propio Python, todas las librerías y una copia de los
+datos en SQLite. Se ejecuta con doble clic en `Iniciar_sistema.bat`.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File empaquetar\preparar_paquete.ps1
+```
+
+---
+
+## Opción alternativa: despliegue en Render
 
 ## 1. Crear el servicio (una sola vez)
 

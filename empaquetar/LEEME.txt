@@ -1,0 +1,21 @@
+SISTEMA DE AUTOMATIZACION DE PEDIDOS - GRANJA MERCADOS
+Autor: Oscar Vilchez - C.I. 27.725.361
+Tutora: Lcda. Beslith Hidalgo
+
+COMO EJECUTAR
+1. Haga doble clic en "Iniciar_sistema.bat".
+2. Espere unos segundos: el navegador se abrira en http://127.0.0.1:8000/login/
+3. Inicie sesion con uno de los usuarios de prueba.
+4. Para cerrar el sistema, cierre la ventana negra.
+
+No requiere instalar nada: incluye su propio Python y su base de datos.
+Requisito: Windows 10 u 11 de 64 bits.
+
+USUARIOS DE PRUEBA
+  Gerente de tienda:   usuario ________   contrasena ________
+  Supervisor:          usuario ________   contrasena ________
+  Operador del CEDI:   usuario ________   contrasena ________
+  Administrador:       usuario ________   contrasena ________  (panel en /admin)
+
+Si Windows muestra un aviso de seguridad al abrir el archivo,
+elija "Mas informacion" y luego "Ejecutar de todas formas".
